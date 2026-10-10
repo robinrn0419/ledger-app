@@ -124,7 +124,7 @@
 做法分三步：1. 實測能不能共用（只顯示讀不讀得到）→ 2. 能用就做真的匯入、課堂薪水加班別 → 3. 不能用就改來回跳轉。
 
 **第 1 步（2026-10-10 已推，打包成功：記一筆 v1.0.4、課堂薪水 v1.0.8，log 確認 entitlements 有寫進去；等真機測試）**，兩個 App 改的一樣：
-- `ios/App/App/AppDelegate.swift` 後面加 `MainViewController`（`capacitorDidLoad` 裡 `registerPluginInstance`）和原生外掛 `SharedBox`（JS：`Capacitor.Plugins.SharedBox`，`info()`→`{ok,group,groups}`、`write({name,text})`、`read({name})`→`{text|null}`）。寫在 AppDelegate.swift 裡是為了不用改 `project.pbxproj`。`Main.storyboard` 的 customClass 改成 `MainViewController`（module `App`）。
+- `ios/App/App/AppDelegate.swift` 後面加 `MainViewController`（`capacitorDidLoad` 裡 `registerPluginInstance`）和原生外掛 `SharedBox`（JS：`Capacitor.Plugins.SharedBox`，`info()`→`{ok,group,groups}`、`write({name,text})`、`read({name})`→`{text|null}`）。寫在 AppDelegate.swift 裡是為了不用改 `project.pbxproj`。**畫面是 `SceneDelegate.swift` 直接 new 出來的**（`rootViewController = MainViewController()`），`Main.storyboard` 沒被用到（也改了 customClass，但沒作用）。v1.0.4／v1.0.8 只改了 storyboard，所以 SharedBox 沒掛上、新畫面都沒出現。
 - 共用 group 原名 `group.io.github.robinrn0419.shared`，寫在 `ios/App/App/App.entitlements`。找真名：簽名檔裡以原名開頭、而且寫得進 `.probe` 的那個。
 - `build.yml` 編譯後加「寫入共用儲存區設定」：用臨時簽名（`codesign --sign -`，先簽 framework 再簽 App）把 App.entitlements 寫進去，log 裡會印出 entitlements。
 - 課堂薪水每次 `saveRec()`（和開 App 時）寫 `class-pay-records.json` = `{app:'課堂薪水', v:1, at, recs}`，紀錄頁底下顯示「記一筆讀得到／讀不到」。

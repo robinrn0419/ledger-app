@@ -43,7 +43,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
-/* 換掉 Capacitor 預設的畫面控制器，只為了把下面的 SharedBox 掛上去（Main.storyboard 指向這個）。 */
+/* 換掉 Capacitor 預設的畫面控制器，只為了把下面的 SharedBox 掛上去（SceneDelegate.swift 用這個；Main.storyboard 其實沒用到）。 */
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SharedBoxPlugin())
