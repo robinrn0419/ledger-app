@@ -119,6 +119,18 @@
 - 從課堂薪水來的紀錄在記一筆裡**唯讀**（不能改、不能刪，要改回課堂薪水改）。
 - 課堂薪水紀錄欄位：`{id(=recId,也是建立時間), t, sub:'teach'|'code'|'model'|'pcb', pay, total, unit, sum}`，金額用 `total`，日期用 `t`。
 
+查證（2026-10-10，讀 SideStore 原始碼，0.7.0-alpha tag 也一樣）：免費帳號允許的功能只有 App Group 和 Inter-App Audio，所以 App Group 可用。SideStore 從 App **簽名裡的 entitlements** 讀要哪些 group，註冊成「原名 + . + 團隊代號」（原名不等於 bundle ID 時），兩個 App 同帳號簽名就會是同一個 group。SideStore 不會寫 `ALTAppGroups`（那是 AltStore 才有），改過的名稱要從 App 裡的 `embedded.mobileprovision` 讀。網路上只找到「App 和自己的小工具」共用成功的例子，兩個獨立 App 要實測。
+
+做法分三步：1. 實測能不能共用（只顯示讀不讀得到）→ 2. 能用就做真的匯入、課堂薪水加班別 → 3. 不能用就改來回跳轉。
+
+**第 1 步（2026-10-10 已推，打包成功：記一筆 v1.0.4、課堂薪水 v1.0.8，log 確認 entitlements 有寫進去；等真機測試）**，兩個 App 改的一樣：
+- `ios/App/App/AppDelegate.swift` 後面加 `MainViewController`（`capacitorDidLoad` 裡 `registerPluginInstance`）和原生外掛 `SharedBox`（JS：`Capacitor.Plugins.SharedBox`，`info()`→`{ok,group,groups}`、`write({name,text})`、`read({name})`→`{text|null}`）。寫在 AppDelegate.swift 裡是為了不用改 `project.pbxproj`。`Main.storyboard` 的 customClass 改成 `MainViewController`（module `App`）。
+- 共用 group 原名 `group.io.github.robinrn0419.shared`，寫在 `ios/App/App/App.entitlements`。找真名：簽名檔裡以原名開頭、而且寫得進 `.probe` 的那個。
+- `build.yml` 編譯後加「寫入共用儲存區設定」：用臨時簽名（`codesign --sign -`，先簽 framework 再簽 App）把 App.entitlements 寫進去，log 裡會印出 entitlements。
+- 課堂薪水每次 `saveRec()`（和開 App 時）寫 `class-pay-records.json` = `{app:'課堂薪水', v:1, at, recs}`，紀錄頁底下顯示「記一筆讀得到／讀不到」。
+- 記一筆「資料與備份」頁最下面多一段「課堂薪水」：共用儲存區能不能用、讀到幾筆、上次寫入時間；不能用時列出簽名裡的 group。
+- 如果 SideStore 註冊 group 失敗，那次更新會裝不上，但舊版會留著。
+
 階段 2 已準備的檔案（2026-10-10）：
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。
 - `capacitor.config.json`、`package.json`（Capacitor 8.5.3 + haptics 8.0.2，同課堂薪水）、`.gitignore`、`.github/workflows/build.yml`（同課堂薪水，ipa 叫 `Ledger.ipa`）、`scripts/make-source.js`。
