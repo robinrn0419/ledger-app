@@ -280,6 +280,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .total-num{margin-top:4px;font-size:clamp(56px,19vw,80px);letter-spacing:-.03em;line-height:1.02}
 .total-num span{font-size:24px;margin-left:8px}
 .total-sub{margin-top:8px}
+/* 財產總額下面的一句話（像準備指數的說明） */
+.mood{margin:14px 4px 0;font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.01em}
 .home-chart{gap:20px;margin-top:22px;padding:0;background:none;border-radius:0;transition:opacity .15s}
 .home-chart:active{background:none;opacity:.55}
 .home-legend .hl{font-size:15px}
@@ -332,6 +334,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
         <span class="total-num"><output id="total">0</output><span>元</span></span>
         <span class="total-sub" id="startLine"></span>
       </button>
+      <p class="mood" id="mood" hidden></p>
       <button type="button" class="setup" id="setupBtn" hidden>
         <span>先填目前有多少錢<small>存款加現金，之後會自動加收入、減支出</small></span>
         <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
@@ -741,6 +744,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('setupBtn').hidden=has;
     $('monthIn').textContent=(min?'+':'')+fmt(min);
     $('monthOut').textContent=(mout?'−':'')+fmt(mout);
+    paintMood(min,mout);
 
     var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
@@ -765,6 +769,55 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     paintHomeChart();
   }
   /* 財產總額的字盡量大，位數多到放不下時才縮小，永遠一行顯示完整 */
+  /* ---------- 財產總額下面的一句話 ---------- */
+  /* 兩種一起看，取比較嚴重的：
+     1. 跟平常比：過去完整月份（開始記帳那個月不算）的平均支出 × 這個月過了幾成，和這個月實際花的比
+     2. 本月收入 vs 支出；每月前 7 天收入常常還沒進來，這項最多只到「注意」
+     同一天、同一種狀況固定顯示同一句，隔天換一句。 */
+  var MOODS={
+    bad:['錢錢怪沒了ㄟ','錢包在哭了啦','錢錢逃跑中，快追','荷包失血中','這個月錢花得好兇','錢錢說它想回家','再花下去要吃土了','存款正在蒸發中','錢錢怪餓肚子了','這樣下去月底要喝西北風','錢包瘦到看不見了','冷靜，先放下購物車','錢錢已讀不回','緊急狀況：錢錢不見了','錢包發出求救訊號','錢錢搭火箭飛走了','荷包見底警報','這個月的錢錢壓力山大','錢錢：我不行了','先別點那個「結帳」'],
+    warn:['要省錢了歐','該踩一下煞車了','錢錢有點緊張了','最近手有點鬆歐','省一點，月底會感謝你','錢包開始冒汗了','小心，錢錢在偷偷變少','先忍一下，那個不一定要買','這個月花得有點快歐','錢錢需要休息一下','購物車先放著冷靜三天','注意荷包餘額歐','省錢模式啟動','錢錢在跟你使眼色','今天能不花就不花','錢錢開始坐立不安','手手先收好歐','荷包有點瘦了','想買的先放進願望清單','錢錢小聲說：省一點'],
+    ok:['穩穩的，照這樣過','一切都很穩','錢錢狀態良好','照這個節奏剛剛好','荷包很平靜','跟平常差不多，不錯','錢錢很安心','目前一切正常','這樣的步調很舒服','錢包表示滿意','穩定發揮中','持續保持，很可以','錢錢乖乖待著','沒什麼好擔心的','今天也是穩穩的一天','收支平衡，讚','錢錢在曬太陽','荷包維持好身材','這個月走得很穩','錢錢跟你比讚'],
+    good:['這個月很會省欸','省錢高手就是你','錢錢在長大中','荷包越來越胖了','今天的你超會理財','錢錢偷偷在存糧','存錢進度超前','這個月的你很可以','錢包笑得很開心','節省有成，給自己掌聲','錢錢怪吃得好飽','存款穩穩往上爬','省錢模範生','這個月錢錢很聽話','錢錢說謝謝你','荷包圓滾滾','錢錢在開派對','照這樣下去要變小富翁','存錢存得好開心','錢錢正在發胖中'],
+    zero:['這個月還沒花錢，太神了','零支出，傳說級','錢包還沒打開過','錢錢一塊都沒少','零元生活挑戰中','完全沒花錢，你是怎麼做到的','錢包在冬眠','這個月的支出：零','一毛都沒花，厲害','錢錢原封不動','荷包滿血狀態','錢錢在睡大覺']
+  };
+  var RANK={good:0,ok:1,warn:2,bad:3};
+  function moodLevel(min,mout,now){
+    if(!(mout>0))return 'zero';
+    var mk=ymd(now).slice(0,7),day=now.getDate(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    /* 1. 跟平常比 */
+    var first=null,out={};
+    db.recs.forEach(function(r){
+      var k=r.date.slice(0,7);
+      if(!first||k<first)first=k;
+      if(r.kind==='out')out[k]=(out[k]||0)+r.amt;
+    });
+    var months=[],y=+first.slice(0,4),m=+first.slice(5,7);
+    for(;;){m++;if(m>12){m=1;y++}var k=y+'-'+pad(m);if(k>=mk)break;months.push(k)}
+    var pace=null;
+    if(months.length){
+      var avg=months.reduce(function(a,k){return a+(out[k]||0)},0)/months.length,want=avg*day/dim;
+      if(want>0){
+        var p=mout/want;
+        pace=p>=1.3?'bad':p>=1.1?'warn':p<=0.8?'good':'ok';
+      }
+    }
+    /* 2. 本月收入 vs 支出 */
+    var bal=mout>min?(day<=7?'warn':'bad'):mout>=min*.8?'warn':pace==null&&mout<=min*.5?'good':'ok';
+    if(pace==null)return bal;
+    if(pace==='good')return bal==='ok'||bal==='good'?'good':bal;
+    return RANK[pace]>=RANK[bal]?pace:bal;
+  }
+  function paintMood(min,mout){
+    var box=$('mood');
+    box.hidden=!db.recs.length;
+    if(!db.recs.length)return;
+    var now=new Date(),lv=moodLevel(min,mout,now),list=MOODS[lv],key=today()+lv,h=0;
+    for(var i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
+    box.textContent=list[h%list.length];
+    box.dataset.lv=lv;
+  }
+
   function fitTotal(){
     var box=document.querySelector('.total-num');
     box.style.fontSize='';
