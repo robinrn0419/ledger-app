@@ -79,6 +79,60 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .more:active{opacity:.5}
 .more svg{width:20px;height:20px}
 .acts li + li::before{left:16px}
+
+/* ---------- 圖表 ---------- */
+/* 圖表配色：驗證過色弱也分得出的 8 色（照順序用、不循環），深色模式用同色系另一階。
+   App 原本的類別顏色（紫和靛藍太像）沒通過驗證，所以圖表不用它們。 */
+:root{--s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#4a3aa7;--s8:#e34948;--s0:#a7a6a1;--grid:#e5e5ea;--axis:#c7c7cc}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--s0:#6b6a66;--grid:#2c2c2e;--axis:#48484a}
+}
+:root[data-theme="dark"]{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;--s0:#6b6a66;--grid:#2c2c2e;--axis:#48484a}
+.donut-box{flex:none;position:relative;display:block;width:128px;height:128px}
+.donut-box.big{width:168px;height:168px}
+.donut-box svg{display:block;width:100%;height:100%}
+.donut-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}
+.donut-mid small{font-size:12px;color:var(--sec)}
+.donut-mid b{font-size:17px;font-weight:700;white-space:nowrap}
+.donut-box.big .donut-mid b{font-size:20px}
+.home-chart{display:flex;align-items:center;gap:16px;width:100%;margin-top:14px;padding:14px 16px;text-align:left;transition:background .15s}
+.home-chart:active{background:var(--press)}
+.home-legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.home-legend .hl{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.home-legend .hl span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-legend .hl em{font-style:normal;color:var(--sec);font-variant-numeric:tabular-nums}
+.home-legend .more-link{margin-top:2px;font-size:13px;color:var(--tint)}
+.sw{flex:none;width:10px;height:10px;border-radius:3px;background:var(--c)}
+.month.sum3{grid-template-columns:repeat(3,1fr)}
+.month.sum3 b{font-size:19px}
+.range{margin-top:8px}
+.period{display:flex;align-items:center;justify-content:space-between;margin:10px -6px 0}
+.period b{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.period button{display:grid;place-items:center;width:40px;height:40px;border-radius:20px;color:var(--tint)}
+.period button:active{background:var(--press)}
+.period button:disabled{color:var(--sec);opacity:.35}
+.period svg{width:10px;height:18px}
+.chart-card{padding-top:14px}
+.donut-row{display:flex;justify-content:center;padding-bottom:10px}
+.legend .lrow{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:8px 16px;text-align:left;font-size:16px;transition:background .15s}
+.legend .lrow:active{background:var(--press)}
+.legend .lrow .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend .lrow .pc{width:44px;text-align:right;color:var(--sec);font-size:14px;font-variant-numeric:tabular-nums}
+.legend .lrow .v{min-width:72px;text-align:right;font-variant-numeric:tabular-nums}
+.legend .lrow .chev{width:7px;height:12px;flex:none;opacity:.4;transition:transform .25s var(--ease)}
+.legend .lrow.open .chev{transform:rotate(90deg)}
+.legend .lrow.child{min-height:40px;padding-left:36px;font-size:14px;color:var(--sec)}
+.legend .lrow.child .v{color:var(--label)}
+.legend li + li::before{left:16px}
+.legend .empty-row{padding:12px 16px;font-size:14px;color:var(--sec)}
+.readout{min-height:20px;padding:0 16px;font-size:14px;color:var(--sec);font-variant-numeric:tabular-nums}
+.readout b{color:var(--label);font-weight:600}
+.plot{padding:6px 8px 4px}
+.plot svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.plot text{font-size:10px;fill:var(--sec);font-family:var(--font)}
+.keys-row{display:flex;gap:16px;padding:4px 16px 12px;font-size:13px;color:var(--sec)}
+.keys-row span{display:flex;align-items:center;gap:6px}
+.keys-row i{width:10px;height:10px;border-radius:3px}
 .total{display:block;width:100%;text-align:left;padding:4px 4px 0;border-radius:12px}
 .total small{display:block;font-size:15px;font-weight:500;color:var(--sec)}
 .total-num{display:block;margin-top:2px;font-family:var(--round);font-size:clamp(40px,12vw,52px);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -220,6 +274,37 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .toast button{flex:none;height:30px;padding:0 12px;border-radius:15px;background:var(--fill);color:var(--tint);font-weight:600}
 .toast:not(.has-undo){padding-right:16px}
 
+/* ---------- 主頁上半部、統計頁：不分格，全部放在同一個平面上 ---------- */
+/* 財產總額最重要，字放到最大 */
+.total small{font-size:16px}
+.total-num{margin-top:4px;font-size:clamp(56px,19vw,80px);letter-spacing:-.03em;line-height:1.02}
+.total-num span{font-size:24px;margin-left:8px}
+.total-sub{margin-top:8px}
+.home-chart{gap:20px;margin-top:22px;padding:0;background:none;border-radius:0;transition:opacity .15s}
+.home-chart:active{background:none;opacity:.55}
+.home-legend .hl{font-size:15px}
+/* 本月收支、統計的收支：一條細線隔開，不用外框 */
+.month{margin-top:22px;padding:14px 0 4px;border-top:.5px solid var(--sep)}
+.month div{padding:0 4px}
+.month div + div{padding-left:16px}
+.month div + div::before{top:2px;bottom:2px}
+.month b{font-size:24px}
+.month.sum3 b{font-size:21px}
+#feed{margin-top:14px}
+/* 統計頁：每一段直接是標題＋圖，段落之間留大空白 */
+#s7 .head{margin:34px 4px 4px;font-size:20px;font-weight:700;color:var(--label);letter-spacing:.01em}
+#s7 .month.sum3{margin-top:16px}
+.chart-card{padding-top:8px}
+.legend{margin-top:6px;border-top:.5px solid var(--sep)}
+.legend .lrow{padding:8px 4px}
+.legend .lrow.child{padding-left:24px}
+.legend li + li::before{left:4px}
+.legend .empty-row{padding:12px 4px}
+.readout{padding:0 4px}
+.plot{padding:6px 0 4px}
+.keys-row{padding:4px 4px 0}
+#s7 .foot{margin-left:4px;margin-right:4px}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
@@ -251,7 +336,11 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
         <span>先填目前有多少錢<small>存款加現金，之後會自動加收入、減支出</small></span>
         <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
       </button>
-      <div class="group month">
+      <button type="button" class="home-chart" id="homeChart" aria-label="收入來源，點一下看統計">
+        <span class="donut-box" id="homeDonut"></span>
+        <span class="home-legend" id="homeLegend"></span>
+      </button>
+      <div class="month">
         <div class="in"><small id="mIn">本月收入</small><b id="monthIn">0</b></div>
         <div><small>本月支出</small><b id="monthOut">0</b></div>
       </div>
@@ -311,6 +400,42 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       <div class="group"><button type="button" class="act del" id="restoreBtn">從備份檔還原</button></div>
       <p class="foot">選一個記一筆的備份檔（.json），現在的資料會整份換成備份檔裡的。換掉之前會先另外留一份，還原錯了可以按「復原」。</p>
       <input type="file" id="restoreIn" accept=".json,application/json" hidden>
+    </section>
+
+    <!-- 7 統計 -->
+    <section class="screen" id="s7">
+      <div class="seg range" id="rangeSeg"><button type="button" data-v="month">月</button><button type="button" data-v="year">年</button><button type="button" data-v="all">全部</button></div>
+      <div class="period" id="period">
+        <button type="button" id="prevPeriod" aria-label="上一個"><svg viewBox="0 0 10 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 1.5 1.5 9l7 7.5"/></svg></button>
+        <b id="periodLabel"></b>
+        <button type="button" id="nextPeriod" aria-label="下一個"><svg viewBox="0 0 10 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m1.5 1.5 7 7.5-7 7.5"/></svg></button>
+      </div>
+      <div class="month sum3">
+        <div class="in"><small>收入</small><b id="stIn">0</b></div>
+        <div><small>支出</small><b id="stOut">0</b></div>
+        <div><small>結餘</small><b id="stNet">0</b></div>
+      </div>
+
+      <div class="head">收入來源</div>
+      <div class="chart-card"><div class="donut-row"><span class="donut-box big" id="inDonut"></span></div><ul class="list legend" id="inList"></ul></div>
+
+      <div class="head">支出類別</div>
+      <div class="chart-card"><div class="donut-row"><span class="donut-box big" id="outDonut"></span></div><ul class="list legend" id="outList"></ul></div>
+      <p class="foot">點一列可以看底下的小類。</p>
+
+      <div class="head" id="barHead">逐月收支</div>
+      <div class="chart-card">
+        <div class="readout" id="barRead"></div>
+        <div class="plot" id="barPlot"></div>
+        <div class="keys-row"><span><i style="background:var(--s3)"></i>收入</span><span><i style="background:var(--s2)"></i>支出</span></div>
+      </div>
+
+      <div class="head" id="lineHead">財產總額變化</div>
+      <div class="chart-card">
+        <div class="readout" id="lineRead"></div>
+        <div class="plot" id="linePlot"></div>
+      </div>
+      <p class="foot">點圖表上的位置可以看那個時間點的數字。</p>
     </section>
   </main>
 
@@ -605,12 +730,13 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     });
     var has=db.start!=null;
     $('total').textContent=fmt((db.start||0)+sin-sout);
+    fitTotal();
     $('startLine').innerHTML='';
     if(has){$('startLine').appendChild(document.createTextNode('起始金額 '+fmt(db.start)+' 元'));$('startLine').insertAdjacentHTML('beforeend',CHEV)}
     $('totalBtn').disabled=!has;
     $('setupBtn').hidden=has;
-    $('monthIn').textContent='+'+fmt(min);
-    $('monthOut').textContent='−'+fmt(mout);
+    $('monthIn').textContent=(min?'+':'')+fmt(min);
+    $('monthOut').textContent=(mout?'−':'')+fmt(mout);
 
     var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
@@ -632,7 +758,16 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       li.appendChild(b);ul.appendChild(li);
     });
     freshId=null;
+    paintHomeChart();
   }
+  /* 財產總額的字盡量大，位數多到放不下時才縮小，永遠一行顯示完整 */
+  function fitTotal(){
+    var box=document.querySelector('.total-num');
+    box.style.fontSize='';
+    var size=parseFloat(getComputedStyle(box).fontSize);
+    while(box.scrollWidth>box.clientWidth&&size>28){size-=2;box.style.fontSize=size+'px'}
+  }
+  window.addEventListener('resize',function(){if(current===1)fitTotal()});
   $('totalBtn').addEventListener('click',function(){startFlow('start')});
   $('setupBtn').addEventListener('click',function(){startFlow('start')});
 
@@ -825,7 +960,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var cancel=current===2;
     $('backChev').style.display=cancel?'none':'';
     $('backLabel').textContent=cancel?'取消':current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':'明細';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -839,7 +974,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     else if(n===3)paintBigs();
     else if(n===4)paintSubs();
     else if(n===5)paintDetail();
-    else paintData();
+    else if(n===6)paintData();
+    else paintStats();
     paintNav();paintDock();
   }
   $('scroll').addEventListener('scroll',function(){$('nav').classList.toggle('lined',this.scrollTop>2)},{passive:true});
@@ -850,7 +986,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     if(current===2)show(flow.mode==='edit'?5:1,true);
     else if(current===3)show(2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
-    else if(current===5||current===6)show(1,true);
+    else if(current>=5)show(1,true);
   }
   $('navBack').addEventListener('click',goBack);
 
@@ -904,6 +1040,289 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   }
   document.addEventListener('touchend',endDrag);
   document.addEventListener('touchcancel',endDrag);
+
+  /* ---------- 統計 ---------- */
+  /* 每個「項目」固定一個顏色（照順序拿 --s1…--s8，不循環），「其他」一律灰色。
+     顏色跟著項目走，不跟著排名走：篩選或換月份時，同一個項目永遠同一個顏色。 */
+  var SLOTS=['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'];
+  function withColors(list,otherId){
+    var n=0;
+    list.forEach(function(e){e.color=e.key===otherId||n>=SLOTS.length?'var(--s0)':'var('+SLOTS[n++]+')'});
+    return list;
+  }
+  /* 收入來源：薪資拆成它的小類（教學、接案、月薪、加班費），其他收入大類各算一個 */
+  function incomeItems(){
+    var list=[];
+    db.cats.filter(function(c){return c.kind==='in'}).forEach(function(c){
+      if(c.id==='salary')c.subs.forEach(function(s){list.push({key:'salary/'+s.id,name:s.name,big:c,sub:s})});
+      else list.push({key:c.id,name:c.name,big:c});
+    });
+    return withColors(list,'in-other');
+  }
+  function expenseItems(){
+    return withColors(db.cats.filter(function(c){return c.kind==='out'}).map(function(c){return {key:c.id,name:c.name,big:c}}),'out-other');
+  }
+  function itemKey(r){return r.kind==='in'&&r.cat==='salary'?'salary/'+r.sub:r.cat}
+
+  /* 把符合條件的紀錄加總到各項目；找不到項目的（例如類別被刪掉）算進「其他」 */
+  function breakdown(kind,items,keep){
+    var by={},total=0;
+    db.recs.forEach(function(r){
+      if(r.kind!==kind||!keep(r))return;
+      var k=itemKey(r);by[k]=(by[k]||0)+r.amt;total+=r.amt;
+    });
+    var known=0,other=null;
+    var rows=items.map(function(e){var v=by[e.key]||0;known+=v;var row={item:e,v:v};if(/other$/.test(e.key))other=row;return row});
+    if(other)other.v+=total-known;
+    return {rows:rows,total:total};
+  }
+  /* 某個項目底下再細分：薪資的小類看細項，其他大類看小類 */
+  function childRows(item,kind,keep){
+    var by={},names={};
+    var list=item.sub?(item.sub.subs||[]):item.big.subs;
+    list.forEach(function(s){names[s.id]=s.name});
+    db.recs.forEach(function(r){
+      if(r.kind!==kind||!keep(r)||itemKey(r)!==item.key)return;
+      var k=item.sub?r.sub2:r.sub;k=k||'';by[k]=(by[k]||0)+r.amt;
+    });
+    return Object.keys(by).map(function(k){return {name:names[k]||'未分類',v:by[k]}}).sort(function(a,b){return b.v-a.v});
+  }
+
+  function fmtShort(n){
+    var a=Math.abs(n),s=n<0?'−':'';
+    if(a>=10000){var w=a/10000;return s+(w>=100?Math.round(w):Math.round(w*10)/10)+'萬'}
+    return s+Math.round(a).toLocaleString('zh-TW');
+  }
+
+  /* 座標軸的數字：一萬以上用「萬」，小數最多兩位，不會四捨五入成看起來一樣的刻度 */
+  function fmtAxis(n){
+    var a=Math.abs(n),s=n<0?'−':'';
+    return a>=10000?s+(Math.round(a/100)/100)+'萬':s+Math.round(a).toLocaleString('zh-TW');
+  }
+
+  /* 圓餅圖（中空的甜甜圈）：照項目固定的順序排，每個項目用自己的顏色，和下面清單一致；段與段之間留一點縫 */
+  function donut(box,rows,total,label){
+    var segs=rows.filter(function(x){return x.v>0});
+    var R=40,C=2*Math.PI*R,SW=15,gap=segs.length>1?1.4:0,off=0;
+    var svg='<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="'+R+'" fill="none" stroke-width="'+SW+'" style="stroke:var(--fill)"/>';
+    if(total>0)segs.forEach(function(x){
+      var len=C*x.v/total,d=Math.max(len-gap,.01);
+      svg+='<circle cx="50" cy="50" r="'+R+'" fill="none" stroke-width="'+SW+'" style="stroke:'+x.item.color+'" stroke-dasharray="'+d+' '+(C-d)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 50 50)"/>';
+      off+=len;
+    });
+    svg+='</svg>';
+    box.innerHTML=svg;
+    var mid=el('span','donut-mid');mid.appendChild(el('small',null,label));mid.appendChild(el('b',null,total>0?fmtShort(total):'—'));
+    box.appendChild(mid);
+  }
+  function swatch(color){var s=el('i','sw');s.style.setProperty('--c',color);return s}
+
+  /* 主頁的收入圓餅圖：全部時間的收入來源，旁邊列出前幾名 */
+  function paintHomeChart(){
+    var b=breakdown('in',incomeItems(),function(){return true});
+    donut($('homeDonut'),b.rows,b.total,'收入');
+    var lg=$('homeLegend');lg.textContent='';
+    var top=b.rows.filter(function(x){return x.v>0}).sort(function(a,c){return c.v-a.v});
+    if(!top.length)lg.appendChild(el('span','hl',null)).appendChild(el('span',null,'還沒有收入'));
+    top.slice(0,4).forEach(function(x){
+      var row=el('span','hl');row.appendChild(swatch(x.item.color));row.appendChild(el('span',null,x.item.name));
+      row.appendChild(el('em',null,Math.round(x.v/b.total*100)+'%'));lg.appendChild(row);
+    });
+    lg.appendChild(el('span','more-link','收入來源・全部　看統計 ›'));
+  }
+  $('homeChart').addEventListener('click',function(){
+    var now=new Date();
+    stat={mode:'all',y:now.getFullYear(),m:now.getMonth()};opened={};barSel=lineSel=null;  /* 每次進來都從「全部」開始 */
+    buzz.tap();show(7);
+  });
+
+  /* 統計頁的時間範圍：月／年／全部，預設全部 */
+  var stat={mode:'all',y:new Date().getFullYear(),m:new Date().getMonth()};
+  var opened={};  /* 清單裡展開了哪幾列 */
+  function inRange(r){
+    if(stat.mode==='all')return true;
+    if(stat.mode==='year')return r.date.slice(0,4)===String(stat.y);
+    return r.date.slice(0,7)===stat.y+'-'+pad(stat.m+1);
+  }
+  function isLatest(){
+    var now=new Date();
+    return stat.mode==='year'?stat.y>=now.getFullYear():stat.y>now.getFullYear()||(stat.y===now.getFullYear()&&stat.m>=now.getMonth());
+  }
+  $('rangeSeg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||b.dataset.v===stat.mode)return;
+    stat.mode=b.dataset.v;barSel=lineSel=null;buzz.tap();paintStats();
+  });
+  function movePeriod(d){
+    if(stat.mode==='year')stat.y+=d;
+    else{var t=new Date(stat.y,stat.m+d,1);stat.y=t.getFullYear();stat.m=t.getMonth()}
+    barSel=lineSel=null;buzz.tap();paintStats();
+  }
+  $('prevPeriod').addEventListener('click',function(){movePeriod(-1)});
+  $('nextPeriod').addEventListener('click',function(){if(!isLatest())movePeriod(1)});
+
+  function paintStats(){
+    $('rangeSeg').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===stat.mode))});
+    $('periodLabel').textContent=stat.mode==='all'?'全部紀錄':stat.mode==='year'?stat.y+' 年':stat.y+' 年 '+(stat.m+1)+' 月';
+    $('prevPeriod').style.visibility=$('nextPeriod').style.visibility=stat.mode==='all'?'hidden':'visible';
+    $('nextPeriod').disabled=isLatest();
+    var bin=breakdown('in',incomeItems(),inRange),bout=breakdown('out',expenseItems(),inRange);
+    $('stIn').textContent=(bin.total?'+':'')+fmt(bin.total);
+    $('stOut').textContent=(bout.total?'−':'')+fmt(bout.total);
+    $('stNet').textContent=fmt(bin.total-bout.total);
+    donut($('inDonut'),bin.rows,bin.total,'收入');
+    donut($('outDonut'),bout.rows,bout.total,'支出');
+    paintLegend($('inList'),bin,'in','還沒有收入');
+    paintLegend($('outList'),bout,'out','還沒有支出');
+    paintBars();paintLine();
+  }
+  /* 圖旁邊的清單：名稱、占比、金額（數字都在這裡，不用靠顏色或點圖） */
+  function paintLegend(ul,b,kind,emptyText){
+    ul.textContent='';
+    var rows=b.rows.filter(function(x){return x.v>0}).sort(function(a,c){return c.v-a.v});
+    if(!rows.length){ul.appendChild(el('li','empty-row',emptyText));return}
+    rows.forEach(function(x){
+      var key=kind+':'+x.item.key,kids=childRows(x.item,kind,inRange);
+      var li=el('li'),bt=el('button','lrow'+(opened[key]?' open':''));bt.type='button';
+      bt.appendChild(swatch(x.item.color));
+      bt.appendChild(el('span','nm',x.item.name));
+      bt.appendChild(el('span','pc',Math.round(x.v/b.total*100)+'%'));
+      bt.appendChild(el('span','v',fmt(x.v)));
+      bt.insertAdjacentHTML('beforeend','<svg class="chev" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>');
+      bt.addEventListener('click',function(){opened[key]=!opened[key];buzz.tap();paintLegend(ul,b,kind,emptyText)});
+      li.appendChild(bt);ul.appendChild(li);
+      if(opened[key])kids.forEach(function(k){
+        var cl=el('li'),cr=el('div','lrow child');
+        cr.appendChild(el('span','nm',k.name));
+        cr.appendChild(el('span','pc',Math.round(k.v/x.v*100)+'%'));
+        cr.appendChild(el('span','v',fmt(k.v)));
+        cl.appendChild(cr);ul.appendChild(cl);
+      });
+    });
+  }
+
+  /* 長條圖、折線圖共用：在 SVG 上點一下，換算成第幾個資料點 */
+  function tapIndex(svg,e,x0,step,n){
+    var b=svg.getBoundingClientRect(),vb=svg.viewBox.baseVal;
+    var x=(e.clientX-b.left)/b.width*vb.width;
+    return Math.max(0,Math.min(n-1,Math.floor((x-x0)/step)));
+  }
+  function niceMax(v){
+    if(v<=0)return 1;
+    var p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;
+    return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;
+  }
+
+  /* 逐月收支：12 個月，每月一對長條（收入、支出）。
+     全部＝最近 12 個月；年＝那一年 1–12 月；月＝到那個月為止的 12 個月 */
+  var barSel=null;
+  function barMonths(){
+    var end;
+    if(stat.mode==='year')return Array.apply(null,Array(12)).map(function(_,i){return {y:stat.y,m:i}});
+    end=stat.mode==='month'?new Date(stat.y,stat.m,1):new Date();
+    return Array.apply(null,Array(12)).map(function(_,i){var t=new Date(end.getFullYear(),end.getMonth()-11+i,1);return {y:t.getFullYear(),m:t.getMonth()}});
+  }
+  function paintBars(){
+    var ms=barMonths(),by={};
+    ms.forEach(function(x){by[x.y+'-'+pad(x.m+1)]={i:0,o:0}});
+    db.recs.forEach(function(r){var k=r.date.slice(0,7);if(by[k]){if(r.kind==='in')by[k].i+=r.amt;else by[k].o+=r.amt}});
+    var data=ms.map(function(x){var v=by[x.y+'-'+pad(x.m+1)];return {y:x.y,m:x.m,i:v.i,o:v.o}});
+    $('barHead').textContent=stat.mode==='year'?stat.y+' 年逐月收支':'逐月收支（12 個月）';
+    var W=340,H=170,L=34,T=10,B=20,pw=W-L-6,ph=H-T-B,step=pw/12;
+    var mx=niceMax(Math.max.apply(null,data.map(function(d){return Math.max(d.i,d.o)})));
+    var y=function(v){return T+ph-v/mx*ph};
+    /* 預設選最後一個有紀錄的月份；看「月」時選那個月 */
+    if(barSel==null){barSel=11;if(stat.mode!=='month')for(var j=11;j>=0;j--)if(data[j].i||data[j].o){barSel=j;break}}
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="逐月收支長條圖">';
+    s+='<rect x="'+(L+barSel*step)+'" y="'+T+'" width="'+step+'" height="'+ph+'" rx="4" style="fill:var(--fill)"/>';
+    [0,.5,1].forEach(function(f){
+      var yy=y(mx*f);
+      s+='<line x1="'+L+'" x2="'+(W-6)+'" y1="'+yy+'" y2="'+yy+'" style="stroke:'+(f?'var(--grid)':'var(--axis)')+'" stroke-width="1"/>';
+      s+='<text x="'+(L-5)+'" y="'+(yy+3.5)+'" text-anchor="end">'+(f?fmtShort(mx*f):'0')+'</text>';
+    });
+    var bw=Math.min(9,step*.32);
+    data.forEach(function(d,i){
+      var cx=L+i*step+step/2;
+      [[d.i,'var(--s3)',cx-bw-1],[d.o,'var(--s2)',cx+1]].forEach(function(b){
+        if(!b[0])return;
+        var h=Math.max(1,b[0]/mx*ph),r=Math.min(3,bw/2,h);
+        /* 上端圓角、底部平的，貼著基準線 */
+        s+='<path d="M'+b[2]+' '+(T+ph)+'V'+(T+ph-h+r)+'Q'+b[2]+' '+(T+ph-h)+' '+(b[2]+r)+' '+(T+ph-h)+'H'+(b[2]+bw-r)+'Q'+(b[2]+bw)+' '+(T+ph-h)+' '+(b[2]+bw)+' '+(T+ph-h+r)+'V'+(T+ph)+'Z" style="fill:'+b[1]+'"/>';
+      });
+      s+='<text x="'+cx+'" y="'+(H-5)+'" text-anchor="middle"'+(i===barSel?' style="fill:var(--label);font-weight:600"':'')+'>'+(d.m+1)+(i===0||d.m===0?'月':'')+'</text>';
+    });
+    s+='</svg>';
+    var p=$('barPlot');p.innerHTML=s;
+    var sel=data[barSel];
+    $('barRead').innerHTML='';
+    var rd=$('barRead');
+    rd.appendChild(el('b',null,(sel.y!==new Date().getFullYear()?sel.y+' 年 ':'')+(sel.m+1)+' 月'));
+    rd.appendChild(document.createTextNode('　收入 +'+fmt(sel.i)+'　支出 −'+fmt(sel.o)+'　結餘 '+fmt(sel.i-sel.o)));
+    p.firstChild.addEventListener('click',function(e){barSel=tapIndex(this,e,L,step,12);buzz.tap();paintBars()});
+  }
+
+  /* 財產總額變化：起始金額加上到每個時間點為止的收支。
+     全部＝從第一筆紀錄那個月到現在，每月月底；年＝那一年每月月底；月＝那個月每天 */
+  var lineSel=null;
+  function balanceAt(dateStr){  /* 到這一天（含）為止的財產總額 */
+    var v=db.start||0;
+    db.recs.forEach(function(r){if(r.date<=dateStr)v+=r.kind==='in'?r.amt:-r.amt});
+    return v;
+  }
+  function linePoints(){
+    var now=new Date(),todayStr=today(),pts=[];
+    if(stat.mode==='month'){
+      var last=new Date(stat.y,stat.m+1,0).getDate();
+      for(var d=1;d<=last;d++){var ds=stat.y+'-'+pad(stat.m+1)+'-'+pad(d);if(ds>todayStr)break;pts.push({label:(stat.m+1)+'/'+d,date:ds})}
+    }else{
+      /* 從開始記帳的那個月起算，之前的月份不畫 */
+      var min=db.recs.reduce(function(a,r){return !a||r.date<a?r.date:a},null)||todayStr;
+      var first=toDate(min);first=new Date(first.getFullYear(),first.getMonth(),1);
+      if(stat.mode==='year'&&first<new Date(stat.y,0,1))first=new Date(stat.y,0,1);
+      for(var t=first;;t=new Date(t.getFullYear(),t.getMonth()+1,1)){
+        if(stat.mode==='year'&&t.getFullYear()!==stat.y)break;
+        var endDs=ymd(new Date(t.getFullYear(),t.getMonth()+1,0));
+        if(ymd(t)>todayStr)break;
+        pts.push({label:(t.getFullYear()!==now.getFullYear()?t.getFullYear()+'/':'')+(t.getMonth()+1)+'月',date:endDs>todayStr?todayStr:endDs});
+      }
+    }
+    pts.forEach(function(p){p.v=balanceAt(p.date)});
+    return pts;
+  }
+  function paintLine(){
+    var pts=linePoints(),p=$('linePlot'),rd=$('lineRead');
+    $('lineHead').textContent=stat.mode==='month'?'財產總額變化（每天）':'財產總額變化（每月月底）';
+    if(!pts.length){p.innerHTML='';rd.textContent='這段時間還沒有資料';return}
+    var W=340,H=160,L=40,R=12,T=12,B=20,pw=W-L-R,ph=H-T-B,n=pts.length;
+    var lo=Math.min.apply(null,pts.map(function(x){return x.v})),hi=Math.max.apply(null,pts.map(function(x){return x.v}));
+    if(lo===hi){lo-=Math.max(1,Math.abs(lo)*.1);hi+=Math.max(1,Math.abs(hi)*.1)}
+    /* 刻度取整數的級距（例如 1 萬、2 萬），上下各多留一格 */
+    var tick=niceMax((hi-lo)/3);lo=Math.floor(lo/tick)*tick;hi=Math.ceil(hi/tick)*tick;
+    var ticks=[];for(var tv=lo;tv<=hi+tick/2;tv+=tick)ticks.push(tv);
+    var step=n>1?pw/(n-1):0;
+    var xOf=function(i){return n>1?L+i*step:L+pw/2},yOf=function(v){return T+ph-(v-lo)/(hi-lo)*ph};
+    if(lineSel==null||lineSel>=n)lineSel=n-1;
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="財產總額變化折線圖">';
+    ticks.forEach(function(v){
+      var yy=yOf(v);
+      s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'" style="stroke:var(--grid)" stroke-width="1"/>';
+      s+='<text x="'+(L-5)+'" y="'+(yy+3.5)+'" text-anchor="end">'+(Math.abs(v)<tick/1e6?'0':fmtAxis(v))+'</text>';
+    });
+    if(lo<0&&hi>0)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+yOf(0)+'" y2="'+yOf(0)+'" style="stroke:var(--axis)" stroke-width="1"/>';
+    var xs=[0,Math.floor((n-1)/2),n-1].filter(function(v,i,a){return a.indexOf(v)===i});
+    xs.forEach(function(i){s+='<text x="'+xOf(i)+'" y="'+(H-5)+'" text-anchor="'+(n>1&&i===0?'start':n>1&&i===n-1?'end':'middle')+'">'+pts[i].label+'</text>'});
+    var sx=xOf(lineSel);
+    s+='<line x1="'+sx+'" x2="'+sx+'" y1="'+T+'" y2="'+(T+ph)+'" style="stroke:var(--axis)" stroke-width="1"/>';
+    if(n>1)s+='<polyline fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="stroke:var(--s1)" points="'+pts.map(function(x,i){return xOf(i)+','+yOf(x.v)}).join(' ')+'"/>';
+    s+='<circle cx="'+sx+'" cy="'+yOf(pts[lineSel].v)+'" r="4.5" stroke-width="2" style="fill:var(--s1);stroke:var(--card)"/>';
+    s+='</svg>';
+    p.innerHTML=s;
+    rd.innerHTML='';rd.appendChild(el('b',null,pts[lineSel].label));
+    rd.appendChild(document.createTextNode('　'+fmt(pts[lineSel].v)+' 元'));
+    p.firstChild.addEventListener('click',function(e){
+      var b=this.getBoundingClientRect(),x=(e.clientX-b.left)/b.width*W;
+      lineSel=n>1?Math.max(0,Math.min(n-1,Math.round((x-L)/step))):0;buzz.tap();paintLine();
+    });
+  }
 
   /* ---------- 資料與備份 ---------- */
   /* 寫檔案、分享選單：只有包成 App 才有（Capacitor 的 Filesystem、Share 套件）；網頁版改成直接下載 */
