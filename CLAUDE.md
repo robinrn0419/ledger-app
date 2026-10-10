@@ -78,7 +78,24 @@
 6. **固定收支**
 7. **從課堂薪水自動匯入**
 
-目前進度：**階段 1 完成（使用者 2026-10-10 說進階段 2）。階段 2 進行中**：Claude 已準備好打包檔案，等使用者在自己電腦上照步驟操作（npm install → cap sync → 建 GitHub repo 推上去 → 開 Pages → SideStore 安裝）。
+目前進度：**階段 1 完成（使用者 2026-10-10 說進階段 2）。階段 2 進行中**（2026-10-10）：
+- 使用者自己跑了 `npm install`、`npx cap sync ios`。
+- 建 repo 和推送使用者說「幫我用」，由 Claude 用使用者電腦上已登入的 `gh`（robinrn0419）做：`gh repo create robinrn0419/ledger-app --public`、用 API 把 Pages 設成 GitHub Actions 發布（`build_type=workflow`）、推上 main。
+- 第一次雲端打包成功：v1.0.1，`Ledger.ipa` 在 Releases，source.json、網頁版、icon 都能連到。拆開 ipa 確認有 `public/index.html`、`zh-Hant.lproj`、圖示。
+- 已查證：免費 Apple ID 同時只能裝 3 個側載 App，SideStore 算一個；使用者手機上只有 SideStore 和課堂薪水，記一筆用掉最後一格。
+- 使用者已在 iPhone 用 SideStore 裝好 v1.0.1（2026-10-10），階段 2 完成。
+
+**階段 3 進行中（2026-10-10）**：使用者選了：還原＝整份取代；備份＝「記帳時自動備份」；CSV＝全部紀錄。
+- 限制（已跟使用者說明）：免費簽名不能寫 iCloud；App 只能寫自己的 Documents 資料夾，刪 App 會一起刪。所以分兩段：App 每次存檔自動寫備份檔 ＋ 在使用者每晚 21:00 的「續簽 App」捷徑後面加動作，把備份檔複製到 iCloud 雲碟。
+- 已寫好的程式：主頁右上「⋯」→「資料與備份」頁（第 6 頁）。
+  - 自動備份：`save()` 成功後 600ms 寫 `Documents/記一筆備份.json`（最新）和 `Documents/每日備份/記一筆-YYYY-MM-DD.json`（每天一份，保留 30 份）；開 App 時也寫一次。最近一次時間存在 localStorage `ledger-last-backup`。網頁版沒有。
+  - 備份檔格式：`{app:'記一筆', type:'backup', at:ISO時間, data:整包 db}`。
+  - 分享備份檔、匯出 CSV：App 裡寫到 CACHE 再用 Share 套件跳分享選單；網頁版直接下載。CSV 有 BOM、欄位「日期,收支,大類,小類,細項,金額,備註」，支出金額是負數。
+  - 還原：選 .json → 檢查（也接受直接是 db 的 JSON，會跑 migrate）→ `confirm()` 顯示兩邊筆數 → 先把現在的資料存到 `ledger-data-before-restore` → 取代 → 提示泡泡可「復原」。
+  - Info.plist 加了 `UIFileSharingEnabled`、`LSSupportsOpeningDocumentsInPlace`，App 的資料夾才會出現在「檔案」App。
+  - 需要新套件 `@capacitor/filesystem@^8.1.4`、`@capacitor/share@^8.0.3`（使用者要自己 npm install + cap sync，Package.swift 會跟著更新）。
+  - 已在瀏覽器測過網頁版路徑（下載、CSV、還原、取消、復原），也用假的 Capacitor 測過 App 版路徑（自動備份、只留 30 份、分享）。真機還沒測。
+- 下一步：使用者裝套件 → 推上去 → 手機更新 → 真機測備份檔是否出現在「檔案」App → 設定捷徑複製到 iCloud 雲碟。
 
 階段 2 已準備的檔案（2026-10-10）：
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。

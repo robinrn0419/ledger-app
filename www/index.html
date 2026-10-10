@@ -74,7 +74,11 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .ico svg{width:19px;height:19px}
 
 /* ---------- 主頁 ---------- */
-#s1{padding-top:18px}
+#s1{position:relative;padding-top:18px}
+.more{position:absolute;right:0;top:16px;display:grid;place-items:center;width:36px;height:36px;border-radius:18px;background:var(--fill);color:var(--tint);transition:opacity .15s}
+.more:active{opacity:.5}
+.more svg{width:20px;height:20px}
+.acts li + li::before{left:16px}
 .total{display:block;width:100%;text-align:left;padding:4px 4px 0;border-radius:12px}
 .total small{display:block;font-size:15px;font-weight:500;color:var(--sec)}
 .total-num{display:block;margin-top:2px;font-family:var(--round);font-size:clamp(40px,12vw,52px);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -235,6 +239,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   <main class="scroll" id="scroll">
     <!-- 1 主頁 -->
     <section class="screen on" id="s1">
+      <button type="button" class="more" id="moreBtn" aria-label="資料與備份">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg>
+      </button>
       <button type="button" class="total" id="totalBtn">
         <small>財產總額</small>
         <span class="total-num"><output id="total">0</output><span>元</span></span>
@@ -286,6 +293,24 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       <div class="group"><ul class="list" id="dRows"></ul></div>
       <div class="group"><button type="button" class="act" id="editRec">修改金額或類別</button></div>
       <div class="group"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
+    </section>
+
+    <!-- 6 資料與備份 -->
+    <section class="screen" id="s6">
+      <div class="head">自動備份</div>
+      <div class="group"><ul class="list" id="bkInfo"></ul></div>
+      <p class="foot" id="bkFoot"></p>
+      <div class="head">手動</div>
+      <div class="group">
+        <ul class="list acts">
+          <li><button type="button" class="act" id="shareBk"></button></li>
+          <li><button type="button" class="act" id="exportCsv">匯出 CSV</button></li>
+        </ul>
+      </div>
+      <p class="foot" id="manualFoot"></p>
+      <div class="group"><button type="button" class="act del" id="restoreBtn">從備份檔還原</button></div>
+      <p class="foot">選一個記一筆的備份檔（.json），現在的資料會整份換成備份檔裡的。換掉之前會先另外留一份，還原錯了可以按「復原」。</p>
+      <input type="file" id="restoreIn" accept=".json,application/json" hidden>
     </section>
   </main>
 
@@ -432,8 +457,10 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     return fresh();
   }
   function save(){
-    try{localStorage.setItem(KEY,JSON.stringify(db));return true}
+    try{localStorage.setItem(KEY,JSON.stringify(db))}
     catch(e){toast('存檔失敗，這筆沒有記下來');return false}
+    autoBackup();  /* 每次存檔就順便更新備份檔（只有 App 版） */
+    return true;
   }
   var db=load();
 
@@ -798,7 +825,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var cancel=current===2;
     $('backChev').style.display=cancel?'none':'';
     $('backLabel').textContent=cancel?'取消':current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:'明細';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -811,7 +838,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     else if(n===2)paintAmt();
     else if(n===3)paintBigs();
     else if(n===4)paintSubs();
-    else paintDetail();
+    else if(n===5)paintDetail();
+    else paintData();
     paintNav();paintDock();
   }
   $('scroll').addEventListener('scroll',function(){$('nav').classList.toggle('lined',this.scrollTop>2)},{passive:true});
@@ -822,7 +850,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     if(current===2)show(flow.mode==='edit'?5:1,true);
     else if(current===3)show(2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
-    else if(current===5)show(1,true);
+    else if(current===5||current===6)show(1,true);
   }
   $('navBack').addEventListener('click',goBack);
 
@@ -877,6 +905,119 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   document.addEventListener('touchend',endDrag);
   document.addEventListener('touchcancel',endDrag);
 
+  /* ---------- 資料與備份 ---------- */
+  /* 寫檔案、分享選單：只有包成 App 才有（Capacitor 的 Filesystem、Share 套件）；網頁版改成直接下載 */
+  var FS=null,SHARE=null;
+  try{if(window.Capacitor&&Capacitor.isNativePlatform()){FS=Capacitor.Plugins.Filesystem;SHARE=Capacitor.Plugins.Share}}catch(e){}
+  var BK_FILE='記一筆備份.json',BK_DIR='每日備份',BK_KEEP=30,BK_TIME='ledger-last-backup';
+  var bkTimer=null,bkErr='';
+  function backupText(){return JSON.stringify({app:'記一筆',type:'backup',at:new Date().toISOString(),data:db})}
+
+  /* 自動備份：存在 App 自己的「文件」資料夾（「檔案」App →「我的 iPhone」→「記一筆」）。
+     記一筆備份.json 永遠是最新的；每日備份/ 裡每天留一份，只保留最近 30 天。 */
+  function autoBackup(){
+    if(!FS)return;
+    clearTimeout(bkTimer);bkTimer=setTimeout(writeBackup,600);  /* 連續存好幾次時只寫最後一次 */
+  }
+  function writeBackup(){
+    var text=backupText(),opt={directory:'DOCUMENTS',encoding:'utf8'};
+    return FS.writeFile(Object.assign({path:BK_FILE,data:text},opt))
+      .then(function(){return FS.writeFile(Object.assign({path:BK_DIR+'/記一筆-'+today()+'.json',data:text,recursive:true},opt))})
+      .then(function(){
+        bkErr='';
+        try{localStorage.setItem(BK_TIME,String(Date.now()))}catch(e){}
+        if(current===6)paintData();
+        return pruneBackups();
+      })
+      .catch(function(e){bkErr=String(e&&e.message||e);if(current===6)paintData()});
+  }
+  function pruneBackups(){
+    return FS.readdir({path:BK_DIR,directory:'DOCUMENTS'}).then(function(r){
+      var names=(r.files||[]).map(function(f){return typeof f==='string'?f:f.name})
+        .filter(function(n){return /^記一筆-\d{4}-\d\d-\d\d\.json$/.test(n)}).sort();
+      return Promise.all(names.slice(0,Math.max(0,names.length-BK_KEEP)).map(function(n){
+        return FS.deleteFile({path:BK_DIR+'/'+n,directory:'DOCUMENTS'});
+      }));
+    });
+  }
+  function agoText(t){
+    var s=(Date.now()-t)/1000,d=new Date(t);
+    if(s<60)return '剛剛';
+    if(s<3600)return Math.floor(s/60)+' 分鐘前';
+    var hm=pad(d.getHours())+':'+pad(d.getMinutes());
+    return (ymd(d)===today()?'今天 ':(d.getMonth()+1)+'/'+d.getDate()+' ')+hm;
+  }
+
+  /* 分享一個檔案：App 裡跳出分享選單（可以「儲存到檔案」或傳給自己），網頁版直接下載 */
+  function shareFile(name,text,mime){
+    if(FS&&SHARE){
+      return FS.writeFile({path:name,data:text,directory:'CACHE',encoding:'utf8'})
+        .then(function(r){return SHARE.share({title:name,files:[r.uri],dialogTitle:name})})
+        .catch(function(e){var m=String(e&&e.message||e);if(!/cancel/i.test(m))toast('沒有分享成功：'+m)});
+    }
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+    return Promise.resolve();
+  }
+
+  /* CSV：給 Excel／Numbers 看。最前面加 BOM，Excel 才認得中文；支出的金額是負數，整欄加總就是結餘 */
+  function csvCell(v){v=String(v==null?'':v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+  function csvText(){
+    var rows=[['日期','收支','大類','小類','細項','金額','備註']];
+    db.recs.slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:a.at-b.at}).forEach(function(r){
+      var n=recName(r);
+      rows.push([r.date,r.kind==='in'?'收入':'支出',n.big,n.sub,n.sub2,(r.kind==='in'?'':'-')+r.amt,r.note||'']);
+    });
+    return '﻿'+rows.map(function(row){return row.map(csvCell).join(',')}).join('\r\n')+'\r\n';
+  }
+
+  function paintData(){
+    var last=+(function(){try{return localStorage.getItem(BK_TIME)}catch(e){return 0}})()||0;
+    var rows=[['紀錄',db.recs.length+' 筆']];
+    rows.push(['最近一次自動備份',!FS?'只有 App 版有':bkErr?'失敗：'+bkErr:last?agoText(last):'還沒有']);
+    var ul=$('bkInfo');ul.textContent='';
+    rows.forEach(function(x){
+      var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+    });
+    $('bkFoot').textContent=FS
+      ?'每記一筆就自動更新，存在「檔案」App →「我的 iPhone」→「記一筆」：「記一筆備份.json」是最新的，「每日備份」資料夾裡每天留一份、保留 30 天。這個資料夾會跟著 App 一起被刪，所以要搭配捷徑每晚複製到 iCloud 雲碟。'
+      :'網頁版不能自動備份，請用下面的「下載備份檔」。網頁版和 App 的資料是分開的。';
+    $('shareBk').textContent=FS?'分享備份檔':'下載備份檔';
+    $('manualFoot').textContent=FS
+      ?'會跳出分享選單，可以「儲存到檔案」或用 LINE、Email 傳給自己。CSV 可以用 Excel 或 Numbers 打開，支出是負數。'
+      :'CSV 可以用 Excel 或 Numbers 打開，支出是負數。';
+  }
+  $('moreBtn').addEventListener('click',function(){buzz.tap();show(6)});
+  $('shareBk').addEventListener('click',function(){buzz.tap();shareFile('記一筆備份-'+today()+'.json',backupText(),'application/json')});
+  $('exportCsv').addEventListener('click',function(){buzz.tap();shareFile('記一筆-'+today()+'.csv',csvText(),'text/csv')});
+
+  /* 還原：整份取代。換掉之前把現在的資料存到 ledger-data-before-restore，提示泡泡上可以復原 */
+  $('restoreBtn').addEventListener('click',function(){buzz.tap();$('restoreIn').value='';$('restoreIn').click()});
+  $('restoreIn').addEventListener('change',function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    var rd=new FileReader();
+    rd.onload=function(){restoreFrom(String(rd.result||''))};
+    rd.onerror=function(){alert('讀不到這個檔案。')};
+    rd.readAsText(f);
+  });
+  function restoreFrom(text){
+    var o,d;
+    try{o=JSON.parse(text);d=migrate(o&&o.app==='記一筆'&&o.data?o.data:o)}catch(e){}
+    if(!(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs))){
+      buzz.note('ERROR');alert('這個檔案不是記一筆的備份檔。');return;
+    }
+    var when=o&&o.at?(function(t){return (t.getMonth()+1)+' 月 '+t.getDate()+' 日 '+pad(t.getHours())+':'+pad(t.getMinutes())})(new Date(o.at)):'不明';
+    if(!confirm('要用這個備份檔還原嗎？\n\n備份檔：'+d.recs.length+' 筆紀錄（'+when+' 備份）\n現在手機上：'+db.recs.length+' 筆紀錄\n\n現在的資料會整份換掉。換掉之前會先另外留一份，還原錯了可以按「復原」。'))return;
+    var prev=JSON.stringify(db);
+    try{localStorage.setItem(KEY+'-before-restore',prev)}catch(e){}
+    db=d;
+    if(!save()){db=JSON.parse(prev);return}
+    buzz.note('SUCCESS');show(1,true);
+    toast('已還原 '+d.recs.length+' 筆紀錄',function(){db=JSON.parse(prev);save();if(current===1)paintHome()});
+  }
+
   /* ---------- 提示（已加入，可復原） ---------- */
   var toastT=null,undoFn=null;
   function toast(msg,undo){
@@ -898,6 +1039,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   document.addEventListener('touchstart',function(){},{passive:true});
 
   show(1);
+  if(db.recs.length||db.start!=null)autoBackup();  /* 打開 App 時也更新一次（例如剛換成新版、資料格式升級過） */
 })();
 </script>
 </body>
