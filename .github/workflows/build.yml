@@ -1,0 +1,113 @@
+# 每次推上 main：在雲端 Mac 打包 iOS App（.ipa），
+# 放到 Releases，再把網頁版和 SideStore 來源清單發布到 GitHub Pages。
+name: 打包 App 並發布
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md'] # 只改說明文件時不用重新打包
+  workflow_dispatch: # 也可以在 GitHub 網頁上手動按「Run workflow」
+
+concurrency:
+  group: build
+  cancel-in-progress: false
+
+jobs:
+  ios:
+    name: 打包 iOS App
+    runs-on: macos-latest
+    permissions:
+      contents: write # 建立 Release 需要
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      size: ${{ steps.ipa.outputs.size }}
+    steps:
+      - name: 下載專案
+        uses: actions/checkout@v5
+
+      - name: 安裝 Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 安裝套件
+        run: npm ci
+
+      - name: 把 www/ 同步進 iOS 專案
+        run: npx cap sync ios
+
+      - name: 決定版本號
+        id: ver
+        run: echo "version=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: 編譯（不簽名，SideStore 安裝時會自己簽）
+        run: |
+          xcodebuild -version
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            MARKETING_VERSION=${{ steps.ver.outputs.version }} \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: 包成 .ipa
+        id: ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/App.app Payload/
+          zip -qry Ledger.ipa Payload
+          echo "size=$(stat -f%z Ledger.ipa)" >> "$GITHUB_OUTPUT"
+
+      - name: 發布到 Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.ver.outputs.version }}
+          TITLE: 記一筆 ${{ steps.ver.outputs.version }}
+          NOTES: ${{ github.event.head_commit.message || '手動打包' }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Ledger.ipa --clobber
+          else
+            gh release create "$TAG" Ledger.ipa --title "$TITLE" --notes "$NOTES"
+          fi
+
+  pages:
+    name: 發布網頁版與 SideStore 來源
+    needs: ios
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: 下載專案
+        uses: actions/checkout@v5
+
+      - name: 準備網站檔案
+        env:
+          VERSION: ${{ needs.ios.outputs.version }}
+          BUILD: ${{ github.run_number }}
+          SIZE: ${{ needs.ios.outputs.size }}
+        run: |
+          node scripts/make-web.js site
+          node scripts/make-source.js > site/source.json
+          cat site/source.json
+
+      - name: 上傳網站
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+      - name: 發布到 GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

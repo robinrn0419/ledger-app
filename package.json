@@ -1,0 +1,14 @@
+{
+  "name": "ledger-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "記一筆：自用的記帳 App",
+  "dependencies": {
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

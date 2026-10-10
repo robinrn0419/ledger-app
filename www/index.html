@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>記一筆</title>
+<style>
+:root{
+  --bg:#F2F2F7;--card:#FFFFFF;--label:#000000;--sec:rgba(60,60,67,.6);--sep:rgba(60,60,67,.2);
+  --fill:rgba(118,118,128,.12);--press:rgba(60,60,67,.1);--key-press:#D1D1D6;--seg:#FFFFFF;
+  --bar:rgba(242,242,247,.88);--tint:#007AFF;--on-tint:#FFFFFF;--in:#248A3D;--out:#000000;--red:#FF3B30;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  --round:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"PingFang TC",system-ui,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#000000;--card:#1C1C1E;--label:#FFFFFF;--sec:rgba(235,235,245,.6);--sep:rgba(84,84,88,.65);
+    --fill:rgba(118,118,128,.24);--press:rgba(235,235,245,.1);--key-press:#3A3A3C;--seg:#636366;
+    --bar:rgba(0,0,0,.82);--tint:#0A84FF;--in:#30D158;--out:#FFFFFF;--red:#FF453A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#000000;--card:#1C1C1E;--label:#FFFFFF;--sec:rgba(235,235,245,.6);--sep:rgba(84,84,88,.65);
+  --fill:rgba(118,118,128,.24);--press:rgba(235,235,245,.1);--key-press:#3A3A3C;--seg:#636366;
+  --bar:rgba(0,0,0,.82);--tint:#0A84FF;--in:#30D158;--out:#FFFFFF;--red:#FF453A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;background:var(--bg)}
+body{
+  margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--label);
+  font-family:var(--font);font-size:17px;line-height:1.3;letter-spacing:-.01em;
+  -webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  touch-action:manipulation;overscroll-behavior:none;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+[hidden]{display:none!important}
+.num{font-variant-numeric:tabular-nums}
+
+.shell{position:relative;height:100%;display:flex;flex-direction:column;max-width:520px;margin:0 auto}
+
+/* 標題列 */
+.nav{
+  flex:none;position:relative;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;
+  background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:.5px solid transparent;z-index:2;transition:border-color .2s;
+}
+.nav.lined{border-bottom-color:var(--sep)}
+.nav-title{position:absolute;left:100px;right:100px;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.nav-btn{display:flex;align-items:center;gap:3px;height:44px;padding:0 8px;color:var(--tint);transition:opacity .15s}
+.nav-btn:active{opacity:.4}
+.nav-btn svg{width:12px;height:21px;flex:none}
+.nav-btn.next{font-weight:600}
+.nav-btn:disabled{color:var(--sec);opacity:.5;cursor:default}
+
+/* 內容區 */
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.shell:has(.dock:not([hidden])) .scroll{padding-bottom:24px}  /* 有底部按鈕時，安全區由按鈕那條負責 */
+.screen{display:none}
+.screen.on{display:block;animation:push .4s var(--ease) both}
+.back .screen.on{animation-name:pop}
+@keyframes push{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+.group{background:var(--card);border-radius:12px;overflow:hidden;margin-top:14px}
+.head{font-size:13px;color:var(--sec);margin:22px 16px 7px}
+.foot{font-size:13px;line-height:1.4;color:var(--sec);margin:8px 16px 0}
+
+/* 圖示方塊（類別） */
+.ico{flex:none;display:grid;place-items:center;width:30px;height:30px;border-radius:7px;background:var(--c,#8E8E93);color:#FFFFFF}
+.ico svg{width:19px;height:19px}
+
+/* ---------- 主頁 ---------- */
+#s1{padding-top:18px}
+.total{display:block;width:100%;text-align:left;padding:4px 4px 0;border-radius:12px}
+.total small{display:block;font-size:15px;font-weight:500;color:var(--sec)}
+.total-num{display:block;margin-top:2px;font-family:var(--round);font-size:clamp(40px,12vw,52px);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.total-num span{font-family:var(--font);font-size:20px;font-weight:600;letter-spacing:0;margin-left:6px;color:var(--sec)}
+.total-sub{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:14px;color:var(--sec);font-variant-numeric:tabular-nums}
+.total-sub svg{width:7px;height:12px;opacity:.6}
+.total:active .total-num{opacity:.6}
+.setup{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:14px;padding:14px 16px;border-radius:12px;background:var(--card);color:var(--tint);font-weight:600;text-align:left;transition:background .15s}
+.setup:active{background:var(--press)}
+.setup small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--sec)}
+.setup svg{width:8px;height:14px;flex:none;opacity:.6}
+.month{display:grid;grid-template-columns:1fr 1fr}
+.month div{position:relative;padding:12px 16px}
+.month div + div::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:.5px;background:var(--sep)}
+.month small{display:block;font-size:13px;color:var(--sec)}
+.month b{display:block;margin-top:2px;font-family:var(--round);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.month .in b{color:var(--in)}
+
+.list{margin:0;padding:0;list-style:none}
+.list li{position:relative}
+.list li + li::before{content:"";position:absolute;top:0;left:58px;right:0;height:.5px;background:var(--sep);z-index:1}
+.rec{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:8px 16px 8px 14px;text-align:left;background:var(--card);transition:background .15s}
+.rec:active{background:var(--press)}
+.rec-main{flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-main span{color:var(--sec)}
+.amt-in,.amt-out{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amt-in{color:var(--in)}
+.amt-out{color:var(--out)}
+.rec.fresh{animation:fresh 1.6s var(--ease)}
+@keyframes fresh{0%,35%{background:var(--press)}100%{background:var(--card)}}
+.empty{margin:48px 24px 0;text-align:center;color:var(--sec);font-size:15px;line-height:1.6}
+
+/* ---------- 輸入金額 ---------- */
+#s2.on{display:flex;flex-direction:column;min-height:100%}
+.amt-top{padding:8px 4px 0;text-align:right}
+.amt-kind{font-size:15px;font-weight:600;color:var(--sec);transition:color .2s}
+body[data-kind="in"] .amt-kind{color:var(--in)}
+.amt-big{font-family:var(--round);font-size:clamp(52px,17vw,72px);font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.amt-big span{font-family:var(--font);font-size:22px;font-weight:600;letter-spacing:0;margin-left:6px;color:var(--sec)}
+.amt-big.zero output{color:var(--sec);opacity:.5}
+.amt-big.shake{animation:shake .4s var(--ease)}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.amt-note{min-height:18px;margin-top:2px;font-size:13px;color:var(--sec)}
+.grow{flex:1;min-height:16px}
+.seg{display:flex;padding:2px;border-radius:9px;background:var(--fill)}
+.seg button{flex:1;height:36px;border-radius:7px;font-size:16px;font-weight:500;transition:background .25s var(--ease),box-shadow .25s var(--ease),color .25s}
+.seg button[aria-pressed="true"]{background:var(--seg);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.seg button[data-v="in"][aria-pressed="true"]{color:var(--in)}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.key{display:grid;place-items:center;height:56px;border-radius:12px;background:var(--card);font-family:var(--round);font-size:26px;font-weight:500;transition:background .1s,transform .1s}
+.key:active{background:var(--key-press);transform:scale(.97)}
+.key.zero{grid-column:span 2}
+.key svg{width:28px;height:22px}
+
+/* ---------- 選類別：選項排在下半部，手指比較好按 ---------- */
+#s3.on,#s4.on{display:flex;flex-direction:column;min-height:100%}
+.pick-sum{display:flex;align-items:baseline;justify-content:space-between;margin:8px 4px 0;font-size:15px;color:var(--sec)}
+.pick-sum b{font-family:var(--round);font-size:22px;font-weight:700;color:var(--label);font-variant-numeric:tabular-nums}
+.pick-sum b.in{color:var(--in)}
+/* 大類方塊：和課堂薪水主頁一樣的彩色大方塊 */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.tile{
+  position:relative;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;
+  min-height:108px;padding:13px 14px 12px;border-radius:18px;overflow:hidden;text-align:left;
+  background:var(--c);color:#FFFFFF;
+  transition:transform .25s var(--ease),filter .25s var(--ease);
+  animation:rise .55s var(--ease) both;animation-delay:calc(var(--i) * 50ms);
+}
+.tiles.few .tile{min-height:150px}
+.tile:active{transform:scale(.95);filter:brightness(.9)}
+.tile .t-ico{width:30px;height:30px}
+.tile .ghost{position:absolute;right:-20px;top:-16px;width:110px;height:110px;opacity:.18;stroke-width:1.4;pointer-events:none}
+.tiles.few .tile .ghost{width:128px;height:128px}
+.tile span{display:block;min-width:0;max-width:100%}
+.tile b{display:block;font-size:20px;font-weight:700;letter-spacing:.01em}
+.tile small{display:block;margin-top:2px;font-size:12px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.sel{box-shadow:inset 0 0 0 3px rgba(255,255,255,.9)}
+@keyframes rise{from{opacity:0;transform:translateY(18px) scale(.95)}to{opacity:1;transform:none}}
+/* 第二層：一條一條的彩色長條 */
+.strips{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.strip{
+  position:relative;display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:0 16px 0 18px;
+  border-radius:16px;overflow:hidden;text-align:left;background:var(--c);color:#FFFFFF;
+  transition:transform .25s var(--ease),filter .25s var(--ease);
+  animation:rise .5s var(--ease) both;animation-delay:calc(var(--i) * 45ms);
+}
+.strip:active{transform:scale(.97);filter:brightness(.9)}
+.strip .s-ico{flex:none;width:28px;height:28px}
+.strip .ghost{position:absolute;right:34px;top:50%;width:92px;height:92px;margin-top:-46px;opacity:.16;stroke-width:1.4;pointer-events:none}
+.strip .name{flex:1;min-width:0;font-size:18px;font-weight:600;letter-spacing:.01em}
+.strip > svg:last-child:not(.ghost):not(.s-ico){flex:none;width:9px;height:16px;opacity:.85}
+.strip.sel{box-shadow:inset 0 0 0 3px rgba(255,255,255,.9)}
+.subs button{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:0 16px 0 14px;text-align:left;transition:background .15s}
+.subs button:active{background:var(--press)}
+.subs .name{flex:1;min-width:0}
+.subs li + li::before{left:16px}
+.subs li:has(.ico) + li::before{left:58px}
+.subs .end{display:flex;align-items:center;gap:10px;color:var(--sec)}
+.subs .end svg:not(.check){width:8px;height:14px;opacity:.6}
+.subs .check{width:14px;height:14px;color:var(--tint)}
+
+/* ---------- 明細 ---------- */
+.d-head{display:flex;flex-direction:column;align-items:center;gap:8px;padding:22px 16px 18px;text-align:center}
+.d-head .ico{width:56px;height:56px;border-radius:13px}
+.d-head .ico svg{width:34px;height:34px}
+.d-head b{font-size:17px;font-weight:600}
+.d-head .amt-in,.d-head .amt-out{font-size:40px;font-weight:700}
+.kv{display:flex;justify-content:space-between;gap:16px;min-height:46px;padding:12px 16px;font-size:16px}
+.kv span:first-child{color:var(--sec)}
+.kv span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.act{display:block;width:100%;min-height:50px;text-align:center;color:var(--tint);transition:background .15s}
+.act:active{background:var(--press)}
+.act.del{color:var(--red)}
+.list .kv{position:relative}
+
+/* 底部按鈕 */
+.dock{
+  flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bar);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--sep);
+}
+.primary{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:52px;border-radius:14px;background:var(--tint);color:var(--on-tint);font-weight:600;transition:transform .2s var(--ease),opacity .2s,background .2s}
+.primary:active{transform:scale(.975);opacity:.85}
+.primary:disabled{background:var(--fill);color:var(--sec);transform:none;opacity:1;cursor:default}
+.primary svg{width:20px;height:20px}
+
+/* 提示（已加入） */
+.toast{
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:9;
+  display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);padding:10px 10px 10px 14px;
+  border-radius:24px;background:var(--card);color:var(--label);font-size:15px;font-weight:500;
+  box-shadow:0 8px 28px rgba(0,0,0,.16),0 0 0 .5px var(--sep);
+  transform:translate(-50%,-20px);opacity:0;pointer-events:none;transition:transform .4s var(--ease),opacity .25s;
+}
+.toast.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.toast .ok{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--in);color:#FFFFFF}
+.toast .ok svg{width:13px;height:13px}
+.toast span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.toast button{flex:none;height:30px;padding:0 12px;border-radius:15px;background:var(--fill);color:var(--tint);font-weight:600}
+.toast:not(.has-undo){padding-right:16px}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="shell" id="shell">
+  <header class="nav" id="nav" hidden>
+    <button type="button" class="nav-btn" id="navBack">
+      <svg id="backChev" viewBox="0 0 12 21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 2 10.5 10 19"/></svg>
+      <span id="backLabel"></span>
+    </button>
+    <div class="nav-title" id="navTitle"></div>
+    <button type="button" class="nav-btn next" id="navNext" hidden></button>
+  </header>
+
+  <main class="scroll" id="scroll">
+    <!-- 1 主頁 -->
+    <section class="screen on" id="s1">
+      <button type="button" class="total" id="totalBtn">
+        <small>財產總額</small>
+        <span class="total-num"><output id="total">0</output><span>元</span></span>
+        <span class="total-sub" id="startLine"></span>
+      </button>
+      <button type="button" class="setup" id="setupBtn" hidden>
+        <span>先填目前有多少錢<small>存款加現金，之後會自動加收入、減支出</small></span>
+        <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
+      </button>
+      <div class="group month">
+        <div class="in"><small id="mIn">本月收入</small><b id="monthIn">0</b></div>
+        <div><small>本月支出</small><b id="monthOut">0</b></div>
+      </div>
+      <div id="feed"></div>
+      <p class="empty" id="empty" hidden>還沒有紀錄。<br>按下方的「記帳」記第一筆。</p>
+    </section>
+
+    <!-- 2 輸入金額 -->
+    <section class="screen" id="s2">
+      <div class="amt-top">
+        <div class="amt-kind" id="amtKind"></div>
+        <div class="amt-big" id="amtBox"><output id="amt">0</output><span>元</span></div>
+        <div class="amt-note" id="amtNote"></div>
+      </div>
+      <div class="grow"></div>
+      <div class="seg" id="kindSeg"><button type="button" data-v="in">收入</button><button type="button" data-v="out">支出</button></div>
+      <div class="keys" id="keys"></div>
+    </section>
+
+    <!-- 3 選大類 -->
+    <section class="screen" id="s3">
+      <div class="pick-sum"><span id="sum3"></span><b id="amt3"></b></div>
+      <div class="grow"></div>
+      <div class="tiles" id="bigs"></div>
+    </section>
+
+    <!-- 4 選小類 -->
+    <section class="screen" id="s4">
+      <div class="pick-sum"><span id="sum4"></span><b id="amt4"></b></div>
+      <div class="grow"></div>
+      <div class="strips" id="strips"></div>
+      <div class="group" id="subsBox"><ul class="list subs" id="subs"></ul></div>
+      <p class="foot">點一下就記好。</p>
+    </section>
+
+    <!-- 5 明細 -->
+    <section class="screen" id="s5">
+      <div class="d-head" id="dHead"></div>
+      <div class="group"><ul class="list" id="dRows"></ul></div>
+      <div class="group"><button type="button" class="act" id="editRec">修改金額或類別</button></div>
+      <div class="group"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
+    </section>
+  </main>
+
+  <footer class="dock" id="dock"><button type="button" class="primary" id="primary"></button></footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <span class="ok"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7"/></svg></span>
+  <span id="toastMsg"></span><button type="button" id="toastUndo">復原</button>
+</div>
+
+<script>
+(function(){
+  /* ---------- 資料 ---------- */
+  /* 全部資料存成一包：{v:版本, start:起始金額, cats:類別, recs:紀錄}。改結構時看 v 決定怎麼搬。 */
+  var KEY='ledger-data';
+  var VERSION=10;
+  /* 類別：大類（有圖示和顏色）底下有小類（有圖示），小類底下可以再分一層。
+     薪資 → 教學 → 比賽班…；薪資 → 接案 → code/model/pcb（和課堂薪水的內容 id 一樣，之後匯入對得上）。 */
+  var DEFAULT_CATS=[
+    /* 支出：生活開銷 → 工作成本 → 會長期保養的東西 → 其他 */
+    {id:'food',kind:'out',name:'飲食',icon:'food',color:'#FF9500',subs:[['breakfast','早餐','egg'],['lunch','午餐','bento'],['dinner','晚餐','bowl'],['drink','飲料點心','cup'],['party','聚餐','cheers']]},
+    {id:'transit',kind:'out',name:'交通',icon:'bus',color:'#007AFF',subs:[['mrt','捷運公車','metro'],['taxi','計程車','car'],['rail','火車高鐵','train'],['fuel','加油停車','fuel']]},
+    {id:'home',kind:'out',name:'居家',icon:'house',color:'#A2845E',subs:[['rent','房租','key'],['utility','水電瓦斯','bolt'],['phone','電信網路','phone'],['furniture','家具家電','sofa']]},
+    {id:'daily',kind:'out',name:'日常',icon:'bag',color:'#30B0C7',subs:[['daily','日用品','bag'],['clothes','衣物','shirt'],['health','醫療保健','cross']]},
+    {id:'work',kind:'out',name:'零件及工具',icon:'pcb',color:'#AF52DE',subs:[
+      ['parts','零件材料','nut',[['elec','電子零件','pcb'],['pcbfab','PCB 打樣','board'],['filament','3D 列印耗材','spool'],['hardware','五金機構','screw']]],
+      ['tools','工具設備','wrench',[['hand','手工具','hammer'],['power','電動工具','drill'],['meter','量測儀器','meter'],['solder','焊接設備','solder']]]]},
+    {id:'3c',kind:'out',name:'3C 數位',icon:'laptop',color:'#5856D6',subs:[
+      ['camera','相機','camera',[['body','機身','camera'],['lens','鏡頭','lens'],['acc','配件','plug'],['repair','維修','wrench']]],
+      ['watch','手錶','watch',[['body','本體','watch'],['acc','錶帶配件','plug'],['repair','維修保養','wrench']]],
+      ['mobile','手機平板','phone',[['body','本體','phone'],['acc','配件','plug'],['repair','維修','wrench']]],
+      ['pc','電腦','laptop',[['body','主機筆電','laptop'],['screen','螢幕','monitor'],['acc','周邊配件','keyboard'],['repair','維修','wrench']]],
+      ['audio','耳機音響','headphones',[['body','本體','headphones'],['acc','配件','plug'],['repair','維修','wrench']]],
+      ['other','其他','dots']]},
+    {id:'hobby',kind:'out',name:'嗜好',icon:'drone',color:'#34C759',subs:[
+      ['drone','空拍機','drone',[['body','本體','drone'],['battery','電池','battery'],['acc','配件','plug'],['repair','維修','wrench']]],
+      ['fpv','穿越機','goggles',[['frame','機架零件','nut'],['battery','電池','battery'],['goggles','圖傳眼鏡','goggles'],['radio','遙控器','remote'],['repair','維修','wrench']]],
+      ['fish','魚缸','fish',[['gear','設備','tank'],['life','生物','fish'],['supply','飼料耗材','leaf']]],
+      ['game','遊戲','gamepad',[['console','主機','gamepad'],['soft','遊戲軟體','disc'],['acc','配件','plug']]],
+      ['model','模型','model',[['kit','模型本體','model'],['paint','工具塗料','brush']]],
+      ['other','其他','dots']]},
+    {id:'subs',kind:'out',name:'訂閱',icon:'repeat',color:'#FF2D55',subs:[['software','軟體工具','app'],['media','影音娛樂','play'],['cloud','雲端空間','cloud']]},
+    {id:'out-other',kind:'out',name:'其他',icon:'dots',color:'#8E8E93',subs:[['study','學習進修','book'],['gift','送禮','gift'],['fee','手續費','receipt'],['misc','雜項','dots']]},
+    {id:'salary',kind:'in',name:'薪資',icon:'cash',color:'#34C759',subs:[
+      ['teach','教學','teach',[['contest','比賽班','trophy'],['advanced','進階班','chart'],['regular','普通班','book'],['other','其他','dots']]],
+      ['gig','接案','briefcase',[['code','寫程式','code'],['model','3D 建模','model'],['pcb','畫 PCB','pcb']]],
+      ['monthly','月薪','calendar'],['overtime','加班費','clock']]},
+    {id:'bonus',kind:'in',name:'獎金',icon:'gift',color:'#FF3B30',subs:[['yearend','年終獎金','gift'],['perf','績效獎金','trophy'],['other','其他獎金','star']]},
+    {id:'given',kind:'in',name:'轉入贈與',icon:'envelope',color:'#FF2D55',subs:[['redenv','紅包','envelope'],['family','家人給的','people'],['refund','退款','undo']]},
+    {id:'in-other',kind:'in',name:'其他',icon:'coin',color:'#8E8E93',subs:[['lottery','中獎','ticket'],['secondhand','二手賣出','tag'],['misc','雜項','dots']]}
+  ].map(function(c){c.subs=c.subs.map(node);return c});
+  /* ['id','名稱','圖示',[底下一層]] → {id,name,icon,subs}；小類底下可以再有一層（例如 薪資 → 教學 → 比賽班） */
+  function node(s){var o={id:s[0],name:s[1]};if(s[2])o.icon=s[2];if(s[3])o.subs=s[3].map(node);return o}
+  /* 一筆紀錄長這樣：
+     {id, kind:'in'|'out', amt:整數元, cat:大類 id, sub:小類 id, sub2:第三層 id 或 null, date:'2026-10-09', note:'',
+      proj:專案 id 或 null（之後）, src:'manual'|'fixed'|'classpay'（來源）, ref:來源那邊的 id 或 null,
+      at:建立時間, upd:最後修改時間} */
+
+  var clone=function(o){return JSON.parse(JSON.stringify(o))};
+  function fresh(){return {v:VERSION,start:null,cats:clone(DEFAULT_CATS),recs:[]}}
+  function migrate(d){
+    /* v1（第一版，只有一層類別、沒有起始金額）→ v2 */
+    if(d&&d.v===1&&Array.isArray(d.recs)){
+      d={v:2,start:null,cats:[],recs:d.recs.map(function(r){r.sub=r.sub||null;return r})};
+    }
+    /* v2 → v3：收入分類改成「教學、接案、薪資…」，舊的收入紀錄搬到對應的新類別 */
+    if(d&&d.v===2&&Array.isArray(d.recs)){
+      var MAP={
+        teach:function(){return ['teach','other']},
+        code:function(){return ['gig','code']},
+        model:function(){return ['gig','model']},
+        pcb:function(){return ['gig','pcb']},
+        'in-other':function(s){return s==='bonus'?['bonus','other']:s==='refund'?['given','refund']:s==='interest'?['invest','interest']:['in-other','misc']}
+      };
+      d.recs.forEach(function(r){
+        if(r.kind!=='in'||!MAP[r.cat])return;
+        var to=MAP[r.cat](r.sub);r.cat=to[0];r.sub=to[1];
+      });
+      d={v:3,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v3 → v4：教學、接案併進「薪資」，拿掉「投資理財」（舊紀錄歸到其他・雜項） */
+    if(d&&d.v===3&&Array.isArray(d.recs)){
+      d.recs.forEach(function(r){
+        if(r.kind!=='in')return;
+        if(r.cat==='teach'){r.cat='salary';r.sub=r.sub==='other'||!r.sub?'teach-other':r.sub}
+        else if(r.cat==='gig'){r.cat='salary'}
+        else if(r.cat==='invest'){r.cat='in-other';r.sub='misc'}
+      });
+      d={v:4,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v4 → v5：薪資底下變三層（薪資 → 教學／接案 → 細項） */
+    if(d&&d.v===4&&Array.isArray(d.recs)){
+      var TEACH={contest:'contest',advanced:'advanced',regular:'regular','teach-other':'other'},GIG={code:1,model:1,pcb:1};
+      d.recs.forEach(function(r){
+        r.sub2=r.sub2||null;
+        if(r.kind!=='in'||r.cat!=='salary')return;
+        if(TEACH[r.sub]){r.sub2=TEACH[r.sub];r.sub='teach'}
+        else if(GIG[r.sub]){r.sub2=r.sub;r.sub='gig'}
+      });
+      d={v:5,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v5 → v6：小類加上圖示（類別還不能自己改，直接換成新的預設） */
+    if(d&&d.v===5&&Array.isArray(d.recs)){
+      d={v:6,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v6 → v7：第三層（教學的班別、接案的種類）也加上圖示 */
+    if(d&&d.v===6&&Array.isArray(d.recs)){
+      d={v:7,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v7 → v8：新增「3C 數位」「嗜好」；工具設備的「電腦周邊」搬到 3C 數位・電腦・周邊配件 */
+    if(d&&d.v===7&&Array.isArray(d.recs)){
+      d.recs.forEach(function(r){
+        if(r.kind==='out'&&r.cat==='tools'&&r.sub==='pc'){r.cat='3c';r.sub='pc';r.sub2='acc'}
+      });
+      d={v:8,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v8 → v9：支出大綱重整（零件材料＋工具設備 → 教課接案；居住、生活 → 居家、日常；電信網路 → 居家；學習進修 → 其他） */
+    if(d&&d.v===8&&Array.isArray(d.recs)){
+      d.recs.forEach(function(r){
+        if(r.kind!=='out')return;
+        if(r.cat==='parts'||r.cat==='tools'){r.sub2=r.sub;r.sub=r.cat;r.cat='work'}
+        else if(r.cat==='subs'&&r.sub==='phone'){r.cat='home'}
+        else if(r.cat==='life'){r.cat=r.sub==='study'?'out-other':'daily'}
+      });
+      d={v:9,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v9 → v10：「教課接案」改名「零件及工具」（紀錄不用動） */
+    if(d&&d.v===9&&Array.isArray(d.recs)){
+      d={v:10,start:d.start==null?null:d.start,cats:clone(DEFAULT_CATS),recs:d.recs};
+    }
+    return d;
+  }
+  function load(){
+    var raw;
+    try{raw=localStorage.getItem(KEY)}catch(e){return fresh()}
+    if(raw==null)return fresh();
+    try{
+      var d=migrate(JSON.parse(raw));
+      if(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs))return d;
+    }catch(e){}
+    /* 讀不懂的資料不要直接蓋掉，先另外存一份，之後還救得回來 */
+    try{localStorage.setItem(KEY+'-broken-'+Date.now(),raw)}catch(e){}
+    return fresh();
+  }
+  function save(){
+    try{localStorage.setItem(KEY,JSON.stringify(db));return true}
+    catch(e){toast('存檔失敗，這筆沒有記下來');return false}
+  }
+  var db=load();
+
+  /* ---------- 小工具 ---------- */
+  var $=function(id){return document.getElementById(id)};
+  var el=function(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e};
+  var fmt=function(n){return (n<0?'−':'')+Math.abs(Math.round(n)).toLocaleString('zh-TW')};
+  var signed=function(r){return (r.kind==='in'?'+':'−')+Math.round(r.amt).toLocaleString('zh-TW')};
+  var pad=function(n){return (n<10?'0':'')+n};
+  function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+  function today(){return ymd(new Date())}
+  function toDate(s){var p=s.split('-');return new Date(+p[0],p[1]-1,+p[2])}
+  var WEEK='日一二三四五六';
+  function dayText(s,long){
+    var d=toDate(s),now=new Date(),y=new Date(now.getFullYear(),now.getMonth(),now.getDate()-1);
+    var base=(d.getFullYear()!==now.getFullYear()||long?d.getFullYear()+' 年 ':'')+(d.getMonth()+1)+' 月 '+d.getDate()+' 日 星期'+WEEK[d.getDay()];
+    if(long)return base;
+    if(s===today())return '今天';
+    if(s===ymd(y))return '昨天';
+    return base;
+  }
+  function newId(){return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+  function bigById(id){
+    return db.cats.filter(function(c){return c.id===id})[0]||{id:id,kind:'out',name:'（已刪除的類別）',icon:'dots',color:'#8E8E93',subs:[]};
+  }
+  function findSub(list,id){return (list||[]).filter(function(x){return x.id===id})[0]||null}
+  /* 一筆紀錄的名稱：big 是大類，rest 是後面的小類（可能兩層，用「・」接起來） */
+  function recName(r){
+    var b=bigById(r.cat),s=findSub(b.subs,r.sub),s2=s&&findSub(s.subs,r.sub2);
+    var rest=[s&&s.name,s2&&s2.name].filter(Boolean).join('・');
+    return {big:b.name,sub:s?s.name:'',sub2:s2?s2.name:'',rest:rest,full:b.name+(rest?'・'+rest:'')};
+  }
+
+  var ICON={
+    food:'M8 4v7a3 3 0 0 0 6 0V4 M11 4v20 M20 24V4c-2.8 1.6-4 4.6-4 8.5V15h4',
+    bus:'M8 4h12a3 3 0 0 1 3 3v13H5V7a3 3 0 0 1 3-3z M5 13h18 M9 20v3 M19 20v3 M9.5 16.5h.01 M18.5 16.5h.01',
+    nut:'M14 3.5l9 5.2v10.6l-9 5.2-9-5.2V8.7z M14 10a4 4 0 1 0 0 8 4 4 0 1 0 0-8z',
+    wrench:'M18 4a6 6 0 0 0-5.6 8.1L4.6 19.9a2.1 2.1 0 0 0 3 3l7.8-7.8A6 6 0 0 0 23.5 9.5l-3.3 3.3-3.5-1-1-3.5L19 5.1A6 6 0 0 0 18 4z',
+    repeat:'M5 13a8 8 0 0 1 14.5-4.7L22 11 M22 5v6h-6 M23 15a8 8 0 0 1-14.5 4.7L6 17 M6 23v-6h6',
+    house:'M4 13.5 14 5l10 8.5 M7 11.5V23h14V11.5 M12 23v-6h4v6',
+    bag:'M6 9h16l-1.4 14.5H7.4z M10 11V8a4 4 0 0 1 8 0v3',
+    dots:'M6 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z M14 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z M22 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z',
+    briefcase:'M4 9h20v14H4z M10 9V6.5A1.5 1.5 0 0 1 11.5 5h5A1.5 1.5 0 0 1 18 6.5V9 M4 15h20',
+    cash:'M3 8h22v12H3z M14 11a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M7 11v6 M21 11v6',
+    gift:'M4 11h20v4H4z M6 15v9h16v-9 M14 11v13 M14 11c-2-4-7-5-7-2 0 2 4 2 7 2z M14 11c2-4 7-5 7-2 0 2-4 2-7 2z',
+    chart:'M4 22l7-7 5 4 8-10 M18 9h6v6',
+    envelope:'M7 3h14v22H7z M7 10l7 4 7-4 M14 17v3',
+    /* 小類用的圖示 */
+    egg:'M14 4c4.5 0 8 7 8 12a8 8 0 0 1-16 0c0-5 3.5-12 8-12z M14 13a3 3 0 1 0 0 6 3 3 0 1 0 0-6z',
+    bento:'M4 8h20v14H4z M4 13h20 M12 13v9',
+    bowl:'M4 14h20a10 9 0 0 1-20 0z M10 10c0-2 2-2.5 2-4.5 M16 10c0-2 2-2.5 2-4.5',
+    cup:'M8 9h12l-1.5 15h-9z M15 9l2.5-5h3 M8.5 14h11',
+    cheers:'M6 4h7l-.6 6.5a2.9 2.9 0 0 1-5.8 0z M9.5 13.5V22 M6.5 22h6 M15 4h7l-.6 6.5a2.9 2.9 0 0 1-5.8 0z M18.5 13.5V22 M15.5 22h6',
+    metro:'M8 3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3z M5 12h18 M10 16.5h.01 M18 16.5h.01 M9 21l-2.5 4 M19 21l2.5 4',
+    car:'M5 17v-4l2.5-6h13l2.5 6v4z M3 17h22v4H3z M8 21v3 M20 21v3 M8 13h12',
+    train:'M3 20h22 M5 20c0-6 4.5-10 13-10h6v10 M18 10v5h6 M9 24l2-4 M19 24l-2-4',
+    fuel:'M5 24V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18 M3 24h16 M8 8h6v5H8z M17 11h2a2 2 0 0 1 2 2v6a1.5 1.5 0 0 0 3 0V10l-3-3',
+    board:'M4 6h20v16H4z M8 10h4v4H8z M17 10h.01 M21 10h.01 M16 17h5 M8 18h.01',
+    spool:'M14 3.5a10.5 10.5 0 1 0 0 21 10.5 10.5 0 1 0 0-21z M14 11a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M14 3.5V11',
+    screw:'M9 3h10v4H9z M11 7v14l3 4 3-4V7 M11 11l6 2 M11 15l6 2',
+    hammer:'M15 11 5 21l2.5 2.5L17.5 13.5 M11 6l5-2 8 8-3 3-3-3-3 1-3-3z',
+    drill:'M4 7h14v7H4z M18 9.5h6 M8 14l-1.5 10h5.5l1.5-10',
+    meter:'M7 3h14v22H7z M10 6h8v6h-8z M14 17.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 1 0 0-5z',
+    monitor:'M3 5h22v14H3z M10 24h8 M14 19v5',
+    app:'M4 5h20v18H4z M4 10h20 M7.5 7.5h.01 M10.5 7.5h.01',
+    play:'M14 4a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M12 10v8l6-4z',
+    cloud:'M8.5 21a5 5 0 0 1-.6-10A7 7 0 0 1 21.2 10a5.5 5.5 0 0 1 .3 11z',
+    phone:'M9 3h10a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M12.5 21h3',
+    key:'M9.5 9a5 5 0 1 0 0 10 5 5 0 1 0 0-10z M14.5 14H25 M21 14v4 M24.5 14v3',
+    bolt:'M15.5 3 6 16h7l-1.5 9L21 12h-7z',
+    sofa:'M6 12V9a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v3 M3 14a2 2 0 0 1 4 0v3h14v-3a2 2 0 0 1 4 0v7H3z M6 21v3 M22 21v3',
+    shirt:'M10 4 4 8l3 4.5 2-1V24h10V11.5l2 1L24 8l-6-4a4 4 0 0 1-8 0z',
+    cross:'M11 4h6v7h7v6h-7v7h-6v-7H4v-6h7z',
+    book:'M4 6c4-1.5 7-1 10 1v17c-3-2-6-2.5-10-1z M24 6c-4-1.5-7-1-10 1v17c3-2 6-2.5 10-1z',
+    receipt:'M7 3h14v22l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6L7 25z M11 9h6 M11 13h6 M11 17h3',
+    calendar:'M4 7h20v17H4z M4 12h20 M9 4v5 M19 4v5 M8.5 16.5h3 M8.5 20h3',
+    clock:'M14 4a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M14 8.5V14l4 2.5',
+    trophy:'M9 4h10v6a5 5 0 0 1-10 0z M9 6H5c0 4 2 6 4 6 M19 6h4c0 4-2 6-4 6 M14 15v5 M10 24h8 M11 20h6',
+    star:'M14 3.5l3.1 6.5 7.1.9-5.2 5 1.3 7.1L14 19.6l-6.3 3.4L9 15.9l-5.2-5 7.1-.9z',
+    people:'M10 12a4 4 0 1 0 0-8 4 4 0 1 0 0 8z M3 24c0-4 3-7 7-7s7 3 7 7 M18.5 11.5a3 3 0 1 0 0-6 M20.5 16.5c2.5.6 4.5 3.3 4.5 6.5',
+    undo:'M9 6 4 11l5 5 M4 11h13a6.5 6.5 0 0 1 0 13h-4',
+    ticket:'M3 8h22v4a2 2 0 0 0 0 4v4H3v-4a2 2 0 0 0 0-4z M18 8v12',
+    tag:'M4 4h10l10 10-10 10L4 14z M9 8.5a.5.5 0 1 0 0 1 .5.5 0 1 0 0-1z',
+    /* 3C 數位、嗜好用的圖示 */
+    laptop:'M6 6h16v11H6z M3 21h22l-2-4H5z',
+    camera:'M4 9h5l2-3h6l2 3h5v14H4z M14 11.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 1 0 0-9z',
+    lens:'M14 4a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M14 9a5 5 0 1 0 0 10 5 5 0 1 0 0-10z M14 4v5 M23.5 11l-4.7 1.6',
+    plug:'M10 3v6 M18 3v6 M7 9h14v5a7 7 0 0 1-14 0z M14 21v4',
+    watch:'M10 3h8l1 5H9z M10 25h8l1-5H9z M14 8a6 6 0 1 0 0 12 6 6 0 1 0 0-12z M14 11v3l2 1.5',
+    keyboard:'M3 8h22v12H3z M7 12h.01 M11 12h.01 M15 12h.01 M19 12h.01 M9 16h10',
+    headphones:'M5 18v-4a9 9 0 0 1 18 0v4 M5 17h4v7H5z M19 17h4v7h-4z',
+    drone:'M11 11h6v6h-6z M11 11 8.6 8.6 M17 11l2.4-2.4 M11 17l-2.4 2.4 M17 17l2.4 2.4 M6.5 3.5a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M21.5 3.5a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M6.5 18.5a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M21.5 18.5a3 3 0 1 0 0 6 3 3 0 1 0 0-6z',
+    battery:'M4 9h18v10H4z M22 12h2v4h-2 M8 12v4 M12 12v4',
+    goggles:'M3 10h22v8h-7l-2-3h-4l-2 3H3z M3 10l2-3h18l2 3',
+    remote:'M5 9h18v12H5z M9.5 13a2 2 0 1 0 0 4 2 2 0 1 0 0-4z M18.5 13a2 2 0 1 0 0 4 2 2 0 1 0 0-4z M14 9V4',
+    fish:'M3.5 14c3-5 8-7 13-5 2 .8 3.5 2.5 4.5 5-1 2.5-2.5 4.2-4.5 5-5 2-10 0-13-5z M21 14l4-4v8z M9.5 13h.01',
+    tank:'M4 6h20v17H4z M4 11h20 M8.5 17c1-1.5 2-1.5 3 0s2 1.5 3 0 2-1.5 3 0',
+    leaf:'M6 22C6 12 12 6 23 5c0 11-6 17-17 17z M6 22l9-9',
+    gamepad:'M8 9h12a5 5 0 0 1 5 5l.5 4a3 3 0 0 1-5.5 2l-1.5-2.5h-9L8 20a3 3 0 0 1-5.5-2L3 14a5 5 0 0 1 5-5z M9 12v4 M7 14h4 M18 13h.01 M20.5 15.5h.01',
+    disc:'M14 4a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M14 11.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 1 0 0-5z',
+    brush:'M20 4l4 4-9 9-4-4z M11 13c-3 0-5 2-5 5 0 2-1 3-3 4 4 1 9 0 10-3 .7-1.5.5-3 .5-3',
+    solder:'M4 24l6-6 M10 18l3 3 9-9-3-3z M19 9l4.5-4.5',
+    coin:'M14 4a10 10 0 1 0 0 20 10 10 0 1 0 0-20z M17 10.5c-.7-1-1.8-1.5-3-1.5-1.7 0-3 .9-3 2.3 0 3.2 6 1.6 6 4.7 0 1.4-1.3 2.5-3 2.5-1.3 0-2.5-.6-3.2-1.6 M14 7v2 M14 19v2',
+    teach:'M4 5h20v13H4z M14 18v5 M9 23h10 M9 10h10 M9 14h6',
+    code:'M10 8l-6 6 6 6 M18 8l6 6-6 6 M16 6l-4 16',
+    model:'M14 3l10 5.5v11L14 25 4 19.5v-11z M4 8.5l10 5.5 10-5.5 M14 14v11',
+    pcb:'M9 9h10v10H9z M12 4v5 M16 4v5 M12 19v5 M16 19v5 M4 12h5 M4 16h5 M19 12h5 M19 16h5'
+  };
+  function svgIcon(name,cls){return '<svg class="'+(cls||'')+'" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="'+(ICON[name]||ICON.dots)+'"/></svg>'}
+  function ico(big){
+    var s=el('span','ico');s.style.setProperty('--c',big.color);
+    s.innerHTML=svgIcon(big.icon);
+    return s;
+  }
+  var CHEV='<svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>';
+
+  /* 震動：只有包成 App 才有，網頁版會自動略過 */
+  var HAP=null;
+  try{if(window.Capacitor&&Capacitor.isNativePlatform())HAP=Capacitor.Plugins.Haptics}catch(e){}
+  function haptic(fn,arg){
+    if(!HAP)return;
+    try{var r=HAP[fn](arg);if(r&&r.catch)r.catch(function(){})}catch(e){}
+  }
+  var buzz={
+    tap:function(s){haptic('impact',{style:s||'LIGHT'})},
+    note:function(t){haptic('notification',{type:t})}
+  };
+
+  /* ---------- 狀態 ---------- */
+  var current=1;
+  /* 這一輪記帳：mode 是 new（記新的）、edit（修改 rec）、start（填起始金額） */
+  var flow={mode:'new',kind:'in',amt:'',big:null,rec:null};
+  var detail=null;   /* 明細頁在看哪一筆 */
+  var freshId=null;  /* 剛加入的那筆，主頁上亮一下 */
+
+  /* ---------- 主頁 ---------- */
+  function paintHome(){
+    var sin=0,sout=0,min=0,mout=0,mk=today().slice(0,7);
+    db.recs.forEach(function(r){
+      if(r.kind==='in')sin+=r.amt;else sout+=r.amt;
+      if(r.date.slice(0,7)===mk){if(r.kind==='in')min+=r.amt;else mout+=r.amt}
+    });
+    var has=db.start!=null;
+    $('total').textContent=fmt((db.start||0)+sin-sout);
+    $('startLine').innerHTML='';
+    if(has){$('startLine').appendChild(document.createTextNode('起始金額 '+fmt(db.start)+' 元'));$('startLine').insertAdjacentHTML('beforeend',CHEV)}
+    $('totalBtn').disabled=!has;
+    $('setupBtn').hidden=has;
+    $('monthIn').textContent='+'+fmt(min);
+    $('monthOut').textContent='−'+fmt(mout);
+
+    var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
+    $('empty').hidden=!!rs.length;
+    var box=$('feed');box.textContent='';
+    var ul=null,last=null;
+    rs.forEach(function(r){
+      if(r.date!==last){
+        last=r.date;
+        box.appendChild(el('div','head',dayText(r.date)));
+        var g=el('div','group');g.style.marginTop='0';ul=el('ul','list');g.appendChild(ul);box.appendChild(g);
+      }
+      var big=bigById(r.cat),n=recName(r),li=el('li'),b=el('button','rec'+(r.id===freshId?' fresh':''));b.type='button';
+      b.appendChild(ico(big));
+      var main=el('span','rec-main',n.big);
+      if(n.rest)main.appendChild(el('span',null,'・'+n.rest));
+      b.appendChild(main);
+      b.appendChild(el('span','amt-'+r.kind,signed(r)));
+      b.addEventListener('click',function(){buzz.tap();detail=r;show(5)});
+      li.appendChild(b);ul.appendChild(li);
+    });
+    freshId=null;
+  }
+  $('totalBtn').addEventListener('click',function(){startFlow('start')});
+  $('setupBtn').addEventListener('click',function(){startFlow('start')});
+
+  /* ---------- 輸入金額 ---------- */
+  function startFlow(mode,rec){
+    flow={mode:mode,kind:rec?rec.kind:'in',amt:'',big:null,rec:rec||null};
+    if(mode==='edit')flow.amt=String(rec.amt);
+    if(mode==='start'&&db.start)flow.amt=String(db.start);
+    buzz.tap();show(2);
+  }
+  function paintAmt(){
+    var n=parseInt(flow.amt,10)||0;
+    document.body.dataset.kind=flow.kind;
+    $('amt').textContent=fmt(n);
+    $('amtBox').classList.toggle('zero',!n);
+    var st=flow.mode==='start';
+    $('amtKind').textContent=st?'目前有多少錢':flow.kind==='in'?'收入':'支出';
+    $('amtNote').textContent=st?'存款加現金的總數，之後隨時可以改。':flow.mode==='edit'?'修改：'+dayText(flow.rec.date)+'的紀錄':'';
+    $('kindSeg').hidden=st;
+    $('kindSeg').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===flow.kind))});
+    paintDock();
+  }
+  ['1','2','3','4','5','6','7','8','9','0','del'].forEach(function(k){
+    var b=el('button','key'+(k==='0'?' zero':''));b.type='button';
+    if(k==='del'){
+      b.setAttribute('aria-label','刪除一位，按住全部清除');
+      b.innerHTML='<svg viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h15a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H9l-7-8z M13 8l6 6 M19 8l-6 6"/></svg>';
+      var timer=null,longed=false;
+      b.addEventListener('pointerdown',function(){
+        longed=false;
+        timer=setTimeout(function(){timer=null;longed=true;if(flow.amt){flow.amt='';paintAmt();buzz.tap('MEDIUM')}},500);
+      });
+      ['pointerup','pointerleave','pointercancel'].forEach(function(n){b.addEventListener(n,function(){clearTimeout(timer)})});
+      b.addEventListener('click',function(){if(longed){longed=false;return}press('del')});
+    }else{
+      b.textContent=k;
+      b.addEventListener('click',function(){press(k)});
+    }
+    $('keys').appendChild(b);
+  });
+  function press(k){
+    if(k==='del'){if(!flow.amt)return;flow.amt=flow.amt.slice(0,-1)}
+    else{
+      var n=(flow.amt+k).replace(/^0+/,'');
+      if(n.length>9||n===flow.amt)return;  /* 最多 9 位數 */
+      flow.amt=n;
+    }
+    paintAmt();buzz.tap();
+  }
+  $('kindSeg').addEventListener('click',function(e){
+    var b=e.target.closest('button');if(!b||b.dataset.v===flow.kind)return;
+    flow.kind=b.dataset.v;buzz.tap();paintAmt();
+  });
+  function next(){
+    var n=parseInt(flow.amt,10)||0;
+    if(flow.mode==='start'){
+      db.start=n;
+      if(!save())return;
+      buzz.note('SUCCESS');show(1,true);toast('已設定目前有 '+fmt(n)+' 元');return;
+    }
+    if(!n){
+      var a=$('amtBox');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
+      buzz.note('WARNING');return;
+    }
+    buzz.tap('MEDIUM');show(3);
+  }
+
+  /* ---------- 選大類、小類 ---------- */
+  function pickSum(n){
+    var amt=parseInt(flow.amt,10)||0;
+    $('sum'+n).textContent=flow.kind==='in'?'收入':'支出';
+    var b=$('amt'+n);b.textContent=(flow.kind==='in'?'+':'−')+fmt(amt)+' 元';b.className=flow.kind==='in'?'in':'';
+  }
+  /* 大類：照課堂薪水主頁的彩色大方塊 */
+  function paintBigs(){
+    pickSum(3);
+    var box=$('bigs');box.textContent='';
+    var list=db.cats.filter(function(c){return c.kind===flow.kind});
+    box.classList.toggle('few',list.length<=4);
+    list.forEach(function(c,i){
+      var cur=flow.mode==='edit'&&flow.rec.cat===c.id&&flow.rec.kind===flow.kind;
+      var t=el('button','tile'+(cur?' sel':''));t.type='button';
+      t.style.setProperty('--c',c.color);t.style.setProperty('--i',i);
+      t.innerHTML=svgIcon(c.icon,'ghost')+svgIcon(c.icon,'t-ico');
+      var txt=el('span');txt.appendChild(el('b',null,c.name));
+      txt.appendChild(el('small',null,c.subs.map(function(s){return s.name}).join('、')));
+      t.appendChild(txt);
+      t.addEventListener('click',function(){
+        buzz.tap();flow.big=c;flow.sub=null;
+        if(!c.subs.length){finish(null,null);return}  /* 沒有小類就直接記 */
+        show(4);
+      });
+      box.appendChild(t);
+    });
+  }
+  var CHECK='<svg class="check" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7.5l3 3 7-8"/></svg>';
+  /* 第二層（小類）：一條一條的彩色長條；第三層：圖示＋文字的清單。flow.sub 有值時是在第三層 */
+  function paintSubs(){
+    pickSum(4);
+    var third=!!flow.sub;
+    var r=flow.mode==='edit'&&flow.rec.cat===flow.big.id?flow.rec:null;
+    var box=$('strips'),ul=$('subs');box.textContent='';ul.textContent='';
+    box.hidden=third;$('subsBox').hidden=!third;
+    (third?flow.sub.subs:flow.big.subs).forEach(function(s,i){
+      var deeper=!third&&s.subs&&s.subs.length;
+      var cur=r&&(third?r.sub===flow.sub.id&&r.sub2===s.id:r.sub===s.id);
+      function pick(){
+        if(deeper){buzz.tap();flow.sub=s;show(4);return}
+        if(third)finish(flow.sub,s);else finish(s,null);
+      }
+      if(!third){
+        var b=el('button','strip'+(cur?' sel':''));b.type='button';
+        b.style.setProperty('--c',flow.big.color);b.style.setProperty('--i',i);
+        b.innerHTML=svgIcon(s.icon,'ghost')+svgIcon(s.icon,'s-ico');
+        b.appendChild(el('span','name',s.name));
+        if(deeper)b.insertAdjacentHTML('beforeend',CHEV);
+        b.addEventListener('click',pick);
+        box.appendChild(b);
+        return;
+      }
+      var li=el('li'),lb=el('button');lb.type='button';
+      if(s.icon)lb.appendChild(ico({color:flow.big.color,icon:s.icon}));
+      lb.appendChild(el('span','name',s.name));
+      if(cur){var end=el('span','end');end.innerHTML=CHECK;lb.appendChild(end)}
+      lb.addEventListener('click',pick);
+      li.appendChild(lb);ul.appendChild(li);
+    });
+  }
+  function finish(sub,sub2){
+    var amt=parseInt(flow.amt,10)||0,big=flow.big,now=Date.now();
+    var label=[big.name,sub&&sub.name,sub2&&sub2.name].filter(Boolean).join('・')+' '+(flow.kind==='in'?'+':'−')+fmt(amt)+' 元';
+    if(flow.mode==='edit'){
+      var r=flow.rec,before=clone(r);
+      r.kind=flow.kind;r.amt=amt;r.cat=big.id;r.sub=sub?sub.id:null;r.sub2=sub2?sub2.id:null;r.upd=now;
+      if(!save()){Object.assign(r,before);return}
+      buzz.note('SUCCESS');freshId=r.id;show(1,true);toast('已修改 '+label);
+      return;
+    }
+    var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:'',proj:null,src:'manual',ref:null,at:now,upd:now};
+    db.recs.push(rec);
+    if(!save()){db.recs.pop();return}
+    buzz.note('SUCCESS');freshId=rec.id;show(1,true);
+    toast('已加入 '+label,function(){
+      db.recs=db.recs.filter(function(x){return x.id!==rec.id});save();if(current===1)paintHome();
+    });
+  }
+
+  /* ---------- 明細 ---------- */
+  function paintDetail(){
+    var r=detail,big=bigById(r.cat),n=recName(r);
+    var h=$('dHead');h.textContent='';
+    h.appendChild(ico(big));
+    h.appendChild(el('b',null,n.full));
+    h.appendChild(el('span','amt-'+r.kind,signed(r)+' 元'));
+    var ul=$('dRows');ul.textContent='';
+    var rows=[['類型',r.kind==='in'?'收入':'支出'],['大類',n.big],['小類',n.sub||'—']];
+    if(n.sub2)rows.push(['細項',n.sub2]);
+    rows.push(['日期',dayText(r.date,true)]);
+    rows.forEach(function(x){
+      var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+    });
+  }
+  $('editRec').addEventListener('click',function(){startFlow('edit',detail)});
+  $('delRec').addEventListener('click',function(){
+    var r=detail,i=db.recs.indexOf(r);if(i<0)return;
+    db.recs.splice(i,1);
+    if(!save()){db.recs.splice(i,0,r);return}
+    var n=recName(r);
+    buzz.tap('MEDIUM');show(1,true);
+    toast('已刪除 '+n.full+' '+signed(r)+' 元',function(){
+      db.recs.push(r);save();freshId=r.id;if(current===1)paintHome();
+    });
+  });
+
+  /* ---------- 換頁、標題列、底部按鈕 ---------- */
+  function paintDock(){
+    var p=$('primary');
+    $('dock').hidden=current!==1;
+    if(current===1)p.innerHTML='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3v14 M3 10h14"/></svg>記帳';
+    /* 輸入金額頁的「下一步」在右上角 */
+    var nx=$('navNext');
+    nx.hidden=current!==2;
+    if(current===2){
+      nx.textContent=flow.mode==='start'?'完成':'下一步';
+      nx.disabled=flow.mode!=='start'&&!(parseInt(flow.amt,10)>0);
+    }
+  }
+  function paintNav(){
+    $('nav').hidden=current===1;
+    var cancel=current===2;
+    $('backChev').style.display=cancel?'none':'';
+    $('backLabel').textContent=cancel?'取消':current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:'明細';
+  }
+  function show(n,back){
+    $('shell').classList.toggle('back',!!back);
+    current=n;
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('on')});
+    $('s'+n).classList.add('on');
+    $('scroll').scrollTop=0;$('nav').classList.remove('lined');
+    if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+    if(n===1){delete document.body.dataset.kind;paintHome()}
+    else if(n===2)paintAmt();
+    else if(n===3)paintBigs();
+    else if(n===4)paintSubs();
+    else paintDetail();
+    paintNav();paintDock();
+  }
+  $('scroll').addEventListener('scroll',function(){$('nav').classList.toggle('lined',this.scrollTop>2)},{passive:true});
+  $('primary').addEventListener('click',function(){startFlow('new')});
+  $('navNext').addEventListener('click',next);
+  function goBack(){
+    buzz.tap();
+    if(current===2)show(flow.mode==='edit'?5:1,true);
+    else if(current===3)show(2,true);
+    else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
+    else if(current===5)show(1,true);
+  }
+  $('navBack').addEventListener('click',goBack);
+
+  /* 電腦上可以直接用鍵盤：數字、Backspace、Enter＝下一步、Esc＝返回 */
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    if(current===2&&/^[0-9]$/.test(e.key)){press(e.key);e.preventDefault()}
+    else if(current===2&&e.key==='Backspace'){press('del');e.preventDefault()}
+    else if(current===2&&e.key==='Enter'){next();e.preventDefault()}
+    else if(e.key==='Escape'&&current>1)goBack();
+  });
+
+  /* 從左緣滑回上一頁：頁面跟著手指移動，放開時超過一半或滑得快就返回 */
+  var EDGE=16;
+  function atEdge(x){return x<EDGE&&current>1}
+  var drag=null,moving=[$('scroll'),$('dock')];
+  function slide(x,anim){
+    moving.forEach(function(e){
+      e.style.transition=anim?'transform .25s var(--ease),opacity .25s var(--ease)':'none';
+      e.style.transform=x?'translateX('+x+'px)':'';
+      e.style.opacity=x?String(1-x/innerWidth*.6):'';
+    });
+  }
+  document.addEventListener('touchstart',function(e){
+    var t=e.touches[0];
+    drag=e.touches.length===1&&atEdge(t.clientX)?{x0:t.clientX,y0:t.clientY,dx:0,on:false,lx:t.clientX,lt:e.timeStamp,v:0}:null;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!drag)return;
+    var t=e.touches[0],dx=t.clientX-drag.x0,dy=t.clientY-drag.y0;
+    if(!drag.on){
+      if(Math.abs(dy)>10&&Math.abs(dy)>Math.abs(dx)){drag=null;return}
+      if(dx<10)return;
+      drag.on=true;
+    }
+    e.preventDefault();
+    var dt=e.timeStamp-drag.lt;
+    if(dt>0)drag.v=(t.clientX-drag.lx)/dt;
+    drag.lx=t.clientX;drag.lt=e.timeStamp;
+    drag.dx=Math.max(0,dx);
+    slide(drag.dx,false);
+  },{passive:false});
+  function endDrag(e){
+    var d=drag;drag=null;
+    if(!d||!d.on)return;
+    var v=e.timeStamp-d.lt>100?0:d.v;
+    var go=e.type==='touchend'&&(d.dx>innerWidth/2||(v>.5&&d.dx>30));
+    if(!go){slide(0,true);return}
+    slide(innerWidth,true);
+    setTimeout(function(){slide(0,false);goBack()},250);
+  }
+  document.addEventListener('touchend',endDrag);
+  document.addEventListener('touchcancel',endDrag);
+
+  /* ---------- 提示（已加入，可復原） ---------- */
+  var toastT=null,undoFn=null;
+  function toast(msg,undo){
+    $('toastMsg').textContent=msg;
+    undoFn=undo||null;
+    $('toastUndo').hidden=!undo;
+    $('toast').classList.toggle('has-undo',!!undo);
+    $('toast').classList.add('on');
+    clearTimeout(toastT);toastT=setTimeout(hideToast,undo?4500:2500);
+  }
+  function hideToast(){$('toast').classList.remove('on');undoFn=null}
+  $('toastUndo').addEventListener('click',function(){var f=undoFn;hideToast();if(f){buzz.tap();f()}});
+
+  /* 從背景回來時，「今天」和「本月」可能已經換了 */
+  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&current===1)paintHome()});
+
+  /* 關掉雙指縮放，讓按下的回饋在 iOS 上生效 */
+  document.addEventListener('gesturestart',function(e){e.preventDefault()});
+  document.addEventListener('touchstart',function(){},{passive:true});
+
+  show(1);
+})();
+</script>
+</body>
+</html>
