@@ -94,8 +94,11 @@
   - 還原：選 .json → 檢查（也接受直接是 db 的 JSON，會跑 migrate）→ `confirm()` 顯示兩邊筆數 → 先把現在的資料存到 `ledger-data-before-restore` → 取代 → 提示泡泡可「復原」。
   - Info.plist 加了 `UIFileSharingEnabled`、`LSSupportsOpeningDocumentsInPlace`，App 的資料夾才會出現在「檔案」App。
   - 需要新套件 `@capacitor/filesystem@^8.1.4`、`@capacitor/share@^8.0.3`（使用者要自己 npm install + cap sync，Package.swift 會跟著更新）。
-  - 已在瀏覽器測過網頁版路徑（下載、CSV、還原、取消、復原），也用假的 Capacitor 測過 App 版路徑（自動備份、只留 30 份、分享）。真機還沒測。
-- 下一步：使用者裝套件 → 推上去 → 手機更新 → 真機測備份檔是否出現在「檔案」App → 設定捷徑複製到 iCloud 雲碟。
+  - 已在瀏覽器測過網頁版路徑（下載、CSV、還原、取消、復原），也用假的 Capacitor 測過 App 版路徑（自動備份、只留 30 份、分享）。
+- v1.0.2（2026-10-10）真機測試都正常：自動備份顯示「剛剛」、「檔案」App →「我的 iPhone」→「記一筆」看得到備份檔和每日備份、分享備份檔和匯出 CSV 都會跳分享選單。
+- 捷徑：使用者在「續簽 App」**最前面**加了兩個動作（續簽失敗時捷徑會停，所以備份放前面）：「取得檔案」我的 iPhone/記一筆/記一筆備份.json →「儲存檔案」到 iCloud 雲碟/記一筆備份（不詢問位置、覆寫）。手動測試成功。iCloud 只留最新一份；要回到前幾天用 App 資料夾的每日備份；App 被刪就重裝後從 iCloud 那份還原。
+
+**階段 3 完成（2026-10-10）。** 使用者可以開始記真實資料了。下一個是階段 4（類別與專案管理）。注意：階段 4 之後使用者會自己改類別，改預設類別時就不能再直接把 `cats` 換成新的預設（見下面資料結構那段）。
 
 階段 2 已準備的檔案（2026-10-10）：
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。
