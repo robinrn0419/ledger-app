@@ -123,13 +123,21 @@
 
 做法分三步：1. 實測能不能共用（只顯示讀不讀得到）→ 2. 能用就做真的匯入、課堂薪水加班別 → 3. 不能用就改來回跳轉。
 
-**第 1 步完成（2026-10-10）**：v1.0.4／v1.0.8 漏改 SceneDelegate 沒作用；修正後**記一筆 v1.0.5、課堂薪水 v1.0.9 真機測試：共用儲存區可以用**（SideStore 0.7.0 免費簽名下兩個獨立 App 共用 App Group 成功），不用退到來回跳轉。，兩個 App 改的一樣：
+**第 1 步完成（2026-10-10）**：v1.0.4／v1.0.8 漏改 SceneDelegate 沒作用；修正後**記一筆 v1.0.5、課堂薪水 v1.0.9 真機測試：共用儲存區可以用**（SideStore 0.7.0 免費簽名下兩個獨立 App 共用 App Group 成功），不用退到來回跳轉。真機上記一筆讀到的筆數和課堂薪水一樣。兩個 App 改的一樣：
 - `ios/App/App/AppDelegate.swift` 後面加 `MainViewController`（`capacitorDidLoad` 裡 `registerPluginInstance`）和原生外掛 `SharedBox`（JS：`Capacitor.Plugins.SharedBox`，`info()`→`{ok,group,groups}`、`write({name,text})`、`read({name})`→`{text|null}`）。寫在 AppDelegate.swift 裡是為了不用改 `project.pbxproj`。**畫面是 `SceneDelegate.swift` 直接 new 出來的**（`rootViewController = MainViewController()`），`Main.storyboard` 沒被用到（也改了 customClass，但沒作用）。v1.0.4／v1.0.8 只改了 storyboard，所以 SharedBox 沒掛上、新畫面都沒出現。
 - 共用 group 原名 `group.io.github.robinrn0419.shared`，寫在 `ios/App/App/App.entitlements`。找真名：簽名檔裡以原名開頭、而且寫得進 `.probe` 的那個。
 - `build.yml` 編譯後加「寫入共用儲存區設定」：用臨時簽名（`codesign --sign -`，先簽 framework 再簽 App）把 App.entitlements 寫進去，log 裡會印出 entitlements。
-- 課堂薪水每次 `saveRec()`（和開 App 時）寫 `class-pay-records.json` = `{app:'課堂薪水', v:1, at, recs}`，紀錄頁底下顯示「記一筆讀得到／讀不到」。
-- 記一筆「資料與備份」頁最下面多一段「課堂薪水」：共用儲存區能不能用、讀到幾筆、上次寫入時間；不能用時列出簽名裡的 group。
+- 課堂薪水每次 `saveRec()`（和開 App 時）寫 `class-pay-records.json`，紀錄頁底下顯示「記一筆讀得到／讀不到」。
 - 如果 SideStore 註冊 group 失敗，那次更新會裝不上，但舊版會留著。
+
+**第 2 步：真的匯入（2026-10-10 寫好、瀏覽器用假 Capacitor 測過，已推，等真機測試）**
+- 共用檔 v2：`{app:'課堂薪水', v:2, at, recs, del}`。`del` 是課堂薪水被刪（紀錄頁刪除、「不存入紀錄」）的 id，存在課堂薪水 localStorage `class-pay-deleted-v1`（留最近 1000 個）。被 500 筆上限擠掉的不在 recs 也不在 del → 記一筆保留。
+- 課堂薪水教學頁最上面加「班別」（比賽班／進階班／普通班／其他，`st.cls`，記住上次選的、存在 `class-pay-cls-v1`，第一次是普通班）；紀錄多 `cls` 欄位，摘要 `sum` 開頭是班別名稱。
+- 記一筆 `syncClassPay()`：開 App 和從背景回來（visibilitychange）時讀共用檔，用 `ref`＝課堂薪水 id 對：沒有的新增（`src:'classpay'`、`at`＝課堂薪水的時間、`note`＝摘要）、amt／類別／日期／note 不一樣就改、`del` 裡的刪。對應：教學 → `salary/teach/<cls>`（沒有 cls → other），code／model／pcb → `salary/gig/<同名>`；金額用 `total`（單個買是合計）。有變動才存檔，提示「課堂薪水：匯入 N 筆、修改 N 筆、刪除 N 筆」（沒有復原）。上次檢查時間存 `ledger-classpay-sync`。
+- 匯入的紀錄唯讀：明細頁多「來源」「內容」兩列，藏起修改／刪除按鈕，改顯示說明。
+- 「資料與備份」頁的「課堂薪水」段：從課堂薪水匯入幾筆、上次檢查時間（失敗顯示原因）。
+- 從備份還原後不會馬上同步（會蓋掉「復原」提示），下次打開或回到 App 時同步。
+- 測過：首次匯入 4 筆（有／沒班別、單個買合計）、改金額＋班別、刪除、被擠掉的保留、沒變動不提示、明細唯讀、課堂薪水刪除寫進 del、班別記住。班別那列在手機寬度需要 305px，放得下。
 
 階段 2 已準備的檔案（2026-10-10）：
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。

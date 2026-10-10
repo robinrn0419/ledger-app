@@ -380,8 +380,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     <section class="screen" id="s5">
       <div class="d-head" id="dHead"></div>
       <div class="group"><ul class="list" id="dRows"></ul></div>
-      <div class="group"><button type="button" class="act" id="editRec">修改金額或類別</button></div>
-      <div class="group"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
+      <div class="group" id="editBox"><button type="button" class="act" id="editRec">修改金額或類別</button></div>
+      <div class="group" id="delBox"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
+      <p class="foot" id="dFoot" hidden>這筆是從課堂薪水匯入的，要修改或刪除請到課堂薪水，記一筆會跟著改。</p>
     </section>
 
     <!-- 6 資料與備份 -->
@@ -929,6 +930,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var rows=[['類型',r.kind==='in'?'收入':'支出'],['大類',n.big],['小類',n.sub||'—']];
     if(n.sub2)rows.push(['細項',n.sub2]);
     rows.push(['日期',dayText(r.date,true)]);
+    var cp=r.src==='classpay';
+    if(cp){rows.push(['來源','課堂薪水']);if(r.note)rows.push(['內容',r.note])}
+    $('editBox').hidden=$('delBox').hidden=cp;$('dFoot').hidden=!cp;
     rows.forEach(function(x){
       var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
     });
@@ -1414,36 +1418,69 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   }
   $('moreBtn').addEventListener('click',function(){buzz.tap();show(6)});
 
-  /* 課堂薪水：透過共用儲存區（原生的 SharedBox）讀它寫的 class-pay-records.json。
-     階段 7 第 1 步只顯示讀不讀得到，還不匯入。 */
+  /* ---------- 從課堂薪水匯入 ---------- */
+  /* 課堂薪水每次存紀錄就把全部紀錄寫到共用儲存區的 class-pay-records.json：
+     {app:'課堂薪水', v:2, at, recs:[{id,t,sub,cls,total,sum,…}], del:[被刪掉的 id]}。
+     記一筆打開、從背景回來時讀一次，用 ref（＝課堂薪水的 id）對起來：沒有的新增、不一樣的改、del 裡的刪。
+     課堂薪水只留 500 筆，被擠掉的不在 recs 也不在 del，記一筆這邊保留。匯入的紀錄在記一筆是唯讀的。 */
   var BOX=null;
   try{if(window.Capacitor&&Capacitor.isNativePlatform())BOX=Capacitor.Plugins.SharedBox}catch(e){}
+  var CP_FILE='class-pay-records.json',CP_TIME='ledger-classpay-sync',cpErr='',cpBusy=false;
+  var CP_CLS={contest:1,advanced:1,regular:1,other:1};
+  /* 課堂薪水的一筆要記到哪：教學 → 薪資・教學・班別（舊紀錄沒有班別 → 其他），其他三種 → 薪資・接案・同名細項 */
+  function cpTarget(x){
+    if(x.sub==='teach')return {sub:'teach',sub2:CP_CLS[x.cls]?x.cls:'other'};
+    if(x.sub==='code'||x.sub==='model'||x.sub==='pcb')return {sub:'gig',sub2:x.sub};
+    return null;
+  }
+  function syncClassPay(){
+    if(!BOX||cpBusy)return;
+    cpBusy=true;
+    BOX.read({name:CP_FILE}).then(function(res){
+      cpErr='';
+      if(res.text==null)return;
+      var o=JSON.parse(res.text);
+      if(!o||!Array.isArray(o.recs))throw new Error('讀不懂課堂薪水的資料');
+      var del={},mine={},add=0,chg=0,rm=0,now=Date.now();
+      (o.del||[]).forEach(function(id){del[id]=1});
+      db.recs.forEach(function(r){if(r.src==='classpay')mine[r.ref]=r});
+      o.recs.forEach(function(x){
+        var t=cpTarget(x),amt=Math.round(+x.total);
+        if(!t||!(amt>0)||del[x.id])return;
+        var want={kind:'in',amt:amt,cat:'salary',sub:t.sub,sub2:t.sub2,date:ymd(new Date(x.t||x.id)),note:x.sum||''};
+        var r=mine[x.id];
+        if(!r){db.recs.push(Object.assign({id:newId()},want,{proj:null,src:'classpay',ref:x.id,at:x.t||x.id,upd:now}));add++;return}
+        if(Object.keys(want).some(function(k){return r[k]!==want[k]})){Object.assign(r,want);r.upd=now;chg++}
+      });
+      db.recs=db.recs.filter(function(r){if(r.src==='classpay'&&del[r.ref]){rm++;return false}return true});
+      try{localStorage.setItem(CP_TIME,String(now))}catch(e){}
+      if(!(add||chg||rm))return;
+      if(!save())return;
+      var msg=[];
+      if(add)msg.push('匯入 '+add+' 筆');
+      if(chg)msg.push('修改 '+chg+' 筆');
+      if(rm)msg.push('刪除 '+rm+' 筆');
+      toast('課堂薪水：'+msg.join('、'));
+      if(current===5&&db.recs.indexOf(detail)<0)show(1,true);
+      else if(current===1)paintHome();
+      else if(current===5)paintDetail();
+      else if(current===7)paintStats();
+    }).catch(function(e){cpErr=String(e&&e.message||e)}).then(function(){
+      cpBusy=false;
+      if(current===6)paintData();
+    });
+  }
   function paintClassPay(){
     if(!BOX)return;
     ['cpHead','cpBox','cpFoot'].forEach(function(id){$(id).hidden=false});
-    function put(rows,foot){
-      var ul=$('cpInfo');ul.textContent='';
-      rows.forEach(function(x){
-        var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
-      });
-      $('cpFoot').textContent=foot||'';
-    }
-    put([['共用儲存區','檢查中…']]);
-    BOX.info().then(function(info){
-      if(!info.ok){put([['共用儲存區','不能用']],'簽名裡的 App Group：'+((info.groups||[]).join('、')||'沒有'));return}
-      return BOX.read({name:'class-pay-records.json'}).then(function(r){
-        var rows=[['共用儲存區','可以用']],foot=info.group;
-        if(r.text==null)rows.push(['課堂薪水的紀錄','還沒寫進來']);
-        else{
-          try{
-            var o=JSON.parse(r.text);
-            rows.push(['課堂薪水的紀錄',(o.recs||[]).length+' 筆']);
-            rows.push(['課堂薪水上次寫入',agoText(+new Date(o.at))]);
-          }catch(e){rows.push(['課堂薪水的紀錄','讀不懂'])}
-        }
-        put(rows,foot);
-      });
-    }).catch(function(e){put([['共用儲存區','錯誤']],String(e&&e.message||e))});
+    var last=+(function(){try{return localStorage.getItem(CP_TIME)}catch(e){return 0}})()||0;
+    var n=db.recs.filter(function(r){return r.src==='classpay'}).length;
+    var rows=[['從課堂薪水匯入',n+' 筆'],['上次檢查',cpErr?'失敗：'+cpErr:last?agoText(last):'還沒有']];
+    var ul=$('cpInfo');ul.textContent='';
+    rows.forEach(function(x){
+      var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+    });
+    $('cpFoot').textContent='每次打開記一筆都會自動匯入課堂薪水算的金額，記成「薪資」的教學或接案。在課堂薪水修改、刪除或「不存入紀錄」，這裡也會跟著改；匯入的紀錄要回課堂薪水改。';
   }
   $('shareBk').addEventListener('click',function(){buzz.tap();shareFile('記一筆備份-'+today()+'.json',backupText(),'application/json')});
   $('exportCsv').addEventListener('click',function(){buzz.tap();shareFile('記一筆-'+today()+'.csv',csvText(),'text/csv')});
@@ -1487,13 +1524,18 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   $('toastUndo').addEventListener('click',function(){var f=undoFn;hideToast();if(f){buzz.tap();f()}});
 
   /* 從背景回來時，「今天」和「本月」可能已經換了 */
-  document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible'&&current===1)paintHome()});
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(current===1)paintHome();
+    syncClassPay();  /* 可能剛在課堂薪水算完一筆 */
+  });
 
   /* 關掉雙指縮放，讓按下的回饋在 iOS 上生效 */
   document.addEventListener('gesturestart',function(e){e.preventDefault()});
   document.addEventListener('touchstart',function(){},{passive:true});
 
   show(1);
+  syncClassPay();
   if(db.recs.length||db.start!=null)autoBackup();  /* 打開 App 時也更新一次（例如剛換成新版、資料格式升級過） */
 })();
 </script>
