@@ -400,6 +400,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       <div class="group"><button type="button" class="act del" id="restoreBtn">從備份檔還原</button></div>
       <p class="foot">選一個記一筆的備份檔（.json），現在的資料會整份換成備份檔裡的。換掉之前會先另外留一份，還原錯了可以按「復原」。</p>
       <input type="file" id="restoreIn" accept=".json,application/json" hidden>
+      <div class="head" id="cpHead" hidden>課堂薪水</div>
+      <div class="group" id="cpBox" hidden><ul class="list" id="cpInfo"></ul></div>
+      <p class="foot" id="cpFoot" hidden></p>
     </section>
 
     <!-- 7 統計 -->
@@ -1404,11 +1407,44 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       ?'每記一筆就自動更新，存在「檔案」App →「我的 iPhone」→「記一筆」：「記一筆備份.json」是最新的，「每日備份」資料夾裡每天留一份、保留 30 天。這個資料夾會跟著 App 一起被刪，所以要搭配捷徑每晚複製到 iCloud 雲碟。'
       :'網頁版不能自動備份，請用下面的「下載備份檔」。網頁版和 App 的資料是分開的。';
     $('shareBk').textContent=FS?'分享備份檔':'下載備份檔';
+    paintClassPay();
     $('manualFoot').textContent=FS
       ?'會跳出分享選單，可以「儲存到檔案」或用 LINE、Email 傳給自己。CSV 可以用 Excel 或 Numbers 打開，支出是負數。'
       :'CSV 可以用 Excel 或 Numbers 打開，支出是負數。';
   }
   $('moreBtn').addEventListener('click',function(){buzz.tap();show(6)});
+
+  /* 課堂薪水：透過共用儲存區（原生的 SharedBox）讀它寫的 class-pay-records.json。
+     階段 7 第 1 步只顯示讀不讀得到，還不匯入。 */
+  var BOX=null;
+  try{if(window.Capacitor&&Capacitor.isNativePlatform())BOX=Capacitor.Plugins.SharedBox}catch(e){}
+  function paintClassPay(){
+    if(!BOX)return;
+    ['cpHead','cpBox','cpFoot'].forEach(function(id){$(id).hidden=false});
+    function put(rows,foot){
+      var ul=$('cpInfo');ul.textContent='';
+      rows.forEach(function(x){
+        var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+      });
+      $('cpFoot').textContent=foot||'';
+    }
+    put([['共用儲存區','檢查中…']]);
+    BOX.info().then(function(info){
+      if(!info.ok){put([['共用儲存區','不能用']],'簽名裡的 App Group：'+((info.groups||[]).join('、')||'沒有'));return}
+      return BOX.read({name:'class-pay-records.json'}).then(function(r){
+        var rows=[['共用儲存區','可以用']],foot=info.group;
+        if(r.text==null)rows.push(['課堂薪水的紀錄','還沒寫進來']);
+        else{
+          try{
+            var o=JSON.parse(r.text);
+            rows.push(['課堂薪水的紀錄',(o.recs||[]).length+' 筆']);
+            rows.push(['課堂薪水上次寫入',agoText(+new Date(o.at))]);
+          }catch(e){rows.push(['課堂薪水的紀錄','讀不懂'])}
+        }
+        put(rows,foot);
+      });
+    }).catch(function(e){put([['共用儲存區','錯誤']],String(e&&e.message||e))});
+  }
   $('shareBk').addEventListener('click',function(){buzz.tap();shareFile('記一筆備份-'+today()+'.json',backupText(),'application/json')});
   $('exportCsv').addEventListener('click',function(){buzz.tap();shareFile('記一筆-'+today()+'.csv',csvText(),'text/csv')});
 

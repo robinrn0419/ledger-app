@@ -42,3 +42,84 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return config
     }
 }
+
+/* 換掉 Capacitor 預設的畫面控制器，只為了把下面的 SharedBox 掛上去（Main.storyboard 指向這個）。 */
+class MainViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(SharedBoxPlugin())
+    }
+}
+
+/* SharedBox：課堂薪水和記一筆的共用儲存區（App Group），在網頁那邊是 Capacitor.Plugins.SharedBox。
+   兩個 App 的 App.entitlements 都寫 group.io.github.robinrn0419.shared；SideStore 簽名時會在後面
+   加上簽名帳號的團隊代號，所以真正的名稱要從 App 裡的 embedded.mobileprovision 讀出來。 */
+@objc(SharedBoxPlugin)
+public class SharedBoxPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "SharedBoxPlugin"
+    public let jsName = "SharedBox"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "write", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "read", returnType: CAPPluginReturnPromise)
+    ]
+
+    static let baseGroup = "group.io.github.robinrn0419.shared"
+
+    /* 簽名檔裡列出的所有 App Group */
+    static func profileGroups() -> [String] {
+        guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+              let data = try? Data(contentsOf: url),
+              let text = String(data: data, encoding: .isoLatin1),
+              let start = text.range(of: "<?xml"),
+              let end = text.range(of: "</plist>", range: start.lowerBound..<text.endIndex),
+              let xml = String(text[start.lowerBound..<end.upperBound]).data(using: .isoLatin1),
+              let plist = try? PropertyListSerialization.propertyList(from: xml, format: nil) as? [String: Any],
+              let ent = plist["Entitlements"] as? [String: Any],
+              let groups = ent["com.apple.security.application-groups"] as? [String]
+        else { return [] }
+        return groups
+    }
+
+    /* 找到能用的共用資料夾：名稱以 baseGroup 開頭、而且真的寫得進去 */
+    static func container() -> (group: String, url: URL)? {
+        let names = profileGroups().filter { $0.hasPrefix(baseGroup) } + [baseGroup]
+        for name in names {
+            guard let url = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: name) else { continue }
+            let probe = url.appendingPathComponent(".probe")
+            if (try? Data("ok".utf8).write(to: probe)) != nil { return (name, url) }
+        }
+        return nil
+    }
+
+    static func fileURL(_ call: CAPPluginCall) -> URL? {
+        guard let name = call.getString("name"), !name.isEmpty, !name.contains("/"), let box = container() else { return nil }
+        return box.url.appendingPathComponent(name)
+    }
+
+    @objc func info(_ call: CAPPluginCall) {
+        let box = SharedBoxPlugin.container()
+        call.resolve([
+            "ok": box != nil,
+            "group": box?.group ?? "",
+            "groups": SharedBoxPlugin.profileGroups()
+        ])
+    }
+
+    @objc func write(_ call: CAPPluginCall) {
+        guard let url = SharedBoxPlugin.fileURL(call) else { return call.reject("沒有共用儲存區") }
+        do {
+            try Data((call.getString("text") ?? "").utf8).write(to: url, options: .atomic)
+            call.resolve()
+        } catch {
+            call.reject(error.localizedDescription)
+        }
+    }
+
+    @objc func read(_ call: CAPPluginCall) {
+        guard let url = SharedBoxPlugin.fileURL(call) else { return call.reject("沒有共用儲存區") }
+        guard let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8) else {
+            return call.resolve(["text": NSNull()])
+        }
+        call.resolve(["text": text])
+    }
+}

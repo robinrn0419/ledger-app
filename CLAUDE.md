@@ -112,6 +112,13 @@
 
 **階段 5 完成（2026-10-10）。** 剩下：階段 4（類別與專案管理，做完要補統計的「每個專案花多少」）、階段 6（固定收支）、階段 7（從課堂薪水匯入）。
 
+**階段 7 進行中（2026-10-10，使用者跳過階段 6 先做 7）**。使用者決定的：
+- 課堂薪水的教學加「班別」選項（比賽班／進階班／普通班／其他），匯入時對到 `salary/teach/` 的同名第三層。舊的教學紀錄沒有班別 → 記成「教學・其他」。
+- 課堂薪水的**舊紀錄全部匯入**（使用者已手動記過的重複要自己刪）。
+- 跟著變：課堂薪水改了金額，記一筆跟著改；被刪或「不存入紀錄」（程式裡就是刪掉），記一筆也刪。注意課堂薪水只留 500 筆，被擠掉的舊紀錄**不能**當成刪除。
+- 從課堂薪水來的紀錄在記一筆裡**唯讀**（不能改、不能刪，要改回課堂薪水改）。
+- 課堂薪水紀錄欄位：`{id(=recId,也是建立時間), t, sub:'teach'|'code'|'model'|'pcb', pay, total, unit, sum}`，金額用 `total`，日期用 `t`。
+
 階段 2 已準備的檔案（2026-10-10）：
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。
 - `capacitor.config.json`、`package.json`（Capacitor 8.5.3 + haptics 8.0.2，同課堂薪水）、`.gitignore`、`.github/workflows/build.yml`（同課堂薪水，ipa 叫 `Ledger.ipa`）、`scripts/make-source.js`。

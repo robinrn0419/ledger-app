@@ -58,6 +58,16 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             build
 
+      # SideStore 從 App 的簽名裡讀「要用哪些 App Group」，不簽名就讀不到，所以用不需要帳號的
+      # 臨時簽名（-）把 App.entitlements 寫進去；SideStore 安裝時會換成真的簽名。
+      - name: 寫入共用儲存區設定
+        run: |
+          APP=build/Build/Products/Release-iphoneos/App.app
+          find "$APP" -depth \( -name "*.framework" -o -name "*.dylib" -o -name "*.appex" \) -print0 \
+            | xargs -0 -I{} codesign --force --sign - --timestamp=none {}
+          codesign --force --sign - --timestamp=none --entitlements ios/App/App/App.entitlements "$APP"
+          codesign -d --entitlements - "$APP"
+
       - name: 包成 .ipa
         id: ipa
         run: |
