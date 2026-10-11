@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import WidgetKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -109,6 +110,7 @@ public class SharedBoxPlugin: CAPPlugin, CAPBridgedPlugin {
         guard let url = SharedBoxPlugin.fileURL(call) else { return call.reject("沒有共用儲存區") }
         do {
             try Data((call.getString("text") ?? "").utf8).write(to: url, options: .atomic)
+            if url.lastPathComponent == "widget.json" { WidgetCenter.shared.reloadAllTimelines() }  // 叫桌面小工具重畫
             call.resolve()
         } catch {
             call.reject(error.localizedDescription)

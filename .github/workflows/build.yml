@@ -37,6 +37,16 @@ jobs:
       - name: 把 www/ 同步進 iOS 專案
         run: npx cap sync ios
 
+      - name: 安裝 Ruby（加小工具用）
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: 把桌面小工具加進 Xcode 專案
+        run: |
+          gem install xcodeproj --no-document
+          ruby scripts/add-widget.rb
+
       - name: 決定版本號
         id: ver
         run: echo "version=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
@@ -63,8 +73,13 @@ jobs:
       - name: 寫入共用儲存區設定
         run: |
           APP=build/Build/Products/Release-iphoneos/App.app
-          find "$APP" -depth \( -name "*.framework" -o -name "*.dylib" -o -name "*.appex" \) -print0 \
+          find "$APP" -depth \( -name "*.framework" -o -name "*.dylib" \) -print0 \
             | xargs -0 -I{} codesign --force --sign - --timestamp=none {}
+          # 桌面小工具也要寫入同一個共用儲存區，才讀得到 App 寫的 widget.json
+          EX="$APP/PlugIns/Widget.appex"
+          test -d "$EX" || { echo "App 裡沒有 Widget.appex"; exit 1; }
+          codesign --force --sign - --timestamp=none --entitlements ios/App/Widget/Widget.entitlements "$EX"
+          codesign -d --entitlements - "$EX"
           codesign --force --sign - --timestamp=none --entitlements ios/App/App/App.entitlements "$APP"
           codesign -d --entitlements - "$APP"
 

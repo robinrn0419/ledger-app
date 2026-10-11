@@ -748,6 +748,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('monthIn').textContent=(min?'+':'')+fmt(min);
     $('monthOut').textContent=(mout?'−':'')+fmt(mout);
     paintMood(min,mout);
+    var mb=$('mood');
+    pushWidget({total:Math.round((db.start||0)+sin-sout),mood:mb.hidden?'':mb.textContent,lv:mb.hidden?'':mb.dataset.lv});
 
     var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
@@ -1481,6 +1483,19 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
      課堂薪水只留 500 筆，被擠掉的不在 recs 也不在 del，記一筆這邊保留。匯入的紀錄在記一筆是唯讀的。 */
   var BOX=null;
   try{if(window.Capacitor&&Capacitor.isNativePlatform())BOX=Capacitor.Plugins.SharedBox}catch(e){}
+
+  /* 桌面小工具：主頁的總額和那句話寫到共用儲存區的 widget.json，原生那邊寫完會叫小工具重畫。
+     內容沒變就不寫，免得一直叫小工具更新。 */
+  var widgetData,widgetSent;  /* 不給初值：主頁可能在這行之前就畫過、存好了 widgetData */
+  function pushWidget(d){
+    if(d)widgetData=d;
+    if(!BOX||!widgetData)return;
+    var text=JSON.stringify(widgetData);
+    if(text===widgetSent)return;
+    widgetSent=text;
+    BOX.write({name:'widget.json',text:text}).catch(function(){widgetSent=''});
+  }
+  pushWidget();  /* 主頁第一次畫的時候 BOX 還沒準備好，這裡補寫 */
   var CP_FILE='class-pay-records.json',CP_TIME='ledger-classpay-sync',cpErr='',cpBusy=false;
   var CP_CLS={contest:1,advanced:1,regular:1,other:1};
   /* 課堂薪水的一筆要記到哪：教學 → 薪資・教學・班別（舊紀錄沒有班別 → 其他），其他三種 → 薪資・接案・同名細項 */
