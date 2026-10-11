@@ -138,6 +138,7 @@
 - 共用檔 v2：`{app:'課堂薪水', v:2, at, recs, del}`。`del` 是課堂薪水被刪（紀錄頁刪除、「不存入紀錄」）的 id，存在課堂薪水 localStorage `class-pay-deleted-v1`（留最近 1000 個）。被 500 筆上限擠掉的不在 recs 也不在 del → 記一筆保留。
 - 課堂薪水教學頁最上面加「班別」（比賽班／進階班／普通班／其他，`st.cls`，記住上次選的、存在 `class-pay-cls-v1`，第一次是普通班）；紀錄多 `cls` 欄位，摘要 `sum` 開頭是班別名稱。
 - 記一筆 `syncClassPay()`：開 App 和從背景回來（visibilitychange）時讀共用檔，用 `ref`＝課堂薪水 id 對：沒有的新增（`src:'classpay'`、`at`＝課堂薪水的時間、`note`＝摘要）、amt／類別／日期／note 不一樣就改、`del` 裡的刪。對應：教學 → `salary/teach/<cls>`（沒有 cls → other），code／model／pcb → `salary/gig/<同名>`；金額用 `total`（單個買是合計）。有變動才存檔，提示「課堂薪水：匯入 N 筆、修改 N 筆、刪除 N 筆」（沒有復原）。上次檢查時間存 `ledger-classpay-sync`。
+- 2026-10-11：課堂薪水紀錄多了選填 `paid`（實際收到），匯入金額改成「有 paid 用 paid，沒有用 total」；paid 改成 0 視同刪除。
 - 匯入的紀錄唯讀：明細頁多「來源」「內容」兩列，藏起修改／刪除按鈕，改顯示說明。
 - 「資料與備份」頁的「課堂薪水」段：從課堂薪水匯入幾筆、上次檢查時間（失敗顯示原因）。
 - 從備份還原後不會馬上同步（會蓋掉「復原」提示），下次打開或回到 App 時同步。

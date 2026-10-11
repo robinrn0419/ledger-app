@@ -1501,8 +1501,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       (o.del||[]).forEach(function(id){del[id]=1});
       db.recs.forEach(function(r){if(r.src==='classpay')mine[r.ref]=r});
       o.recs.forEach(function(x){
-        var t=cpTarget(x),amt=Math.round(+x.total);
-        if(!t||!(amt>0)||del[x.id])return;
+        var t=cpTarget(x),amt=Math.round(typeof x.paid==='number'?x.paid:+x.total);  /* 有填實際收到就用實際的 */
+        if(!t)return;
+        if(!(amt>0)||del[x.id]){del[x.id]=1;return}  /* 實際收到改成 0 也刪掉 */
         var want={kind:'in',amt:amt,cat:'salary',sub:t.sub,sub2:t.sub2,date:ymd(new Date(x.t||x.id)),note:x.sum||''};
         var r=mine[x.id];
         if(!r){db.recs.push(Object.assign({id:newId()},want,{proj:null,src:'classpay',ref:x.id,at:x.t||x.id,upd:now}));add++;return}
