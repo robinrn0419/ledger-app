@@ -127,7 +127,7 @@
 - `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
 - 小工具程式在 `ios/App/Widget/`（`LedgerWidget.swift`、`Info.plist`、`Widget.entitlements` 同 App 的 group），iOS 17 起。使用者沒有 Mac，`build.yml` 每次打包用 `scripts/add-widget.rb`（xcodeproj gem）把 Widget target 加進專案、嵌進 App.app/PlugIns；臨時簽名時 appex 用自己的 entitlements 簽，找不到 Widget.appex 就讓打包失敗。
 - SideStore（讀原始碼）：iOS 13.5 以上擴充功能**不算**進 3 個 App 上限，但每個擴充功能要多一個 App ID（免費帳號每 7 天 10 個）。第一次裝會跳「App Contains Extensions」，要選 **Keep App Extensions (Register App ID for Each Extension)**；「Use Main Profile」讓小工具借 App 的簽名，身分對不上，不要選。
-- 使用者說字太小（v1.0.12）：標題 16、數字 48（拿掉「元」，最小縮到 0.5）、那句話 22 特粗。v1.0.12 用了邊距 12＋中間 Spacer，使用者說「中間空太多、偏一邊」→ 改回系統預設邊距、三行間距 4、整組上下置中（v1.0.13）。使用者仍覺得「怪怪的」，給 4 種擺法選了「維持置中，只把那句話縮小」→ 那句話 17 半粗（v1.0.14）。真機確認小工具讀得到 App Group 的 widget.json。
+- 使用者說字太小（v1.0.12）：標題 16、數字 48（拿掉「元」，最小縮到 0.5）、那句話 22 特粗。v1.0.12 用了邊距 12＋中間 Spacer，使用者說「中間空太多、偏一邊」→ 改回系統預設邊距、三行間距 4、整組上下置中（v1.0.13）。使用者仍覺得「怪怪的」，給 4 種擺法選了「維持置中，只把那句話縮小」→ 那句話 17 半粗（v1.0.14）。使用者說背景單調，選「角落淡淡的大錢包」：`WalletMark`（Canvas 照 App 圖示的 SVG 畫，綠卡片 28%、本體 9%、扣帶 7%、扣子 12% 的 primary 色），124pt、往右下推出 22／30 只露一部分（v1.0.15）。真機確認小工具讀得到 App Group 的 widget.json。
 
 查證（2026-10-10，讀 SideStore 原始碼，0.7.0-alpha tag 也一樣）：免費帳號允許的功能只有 App Group 和 Inter-App Audio，所以 App Group 可用。SideStore 從 App **簽名裡的 entitlements** 讀要哪些 group，註冊成「原名 + . + 團隊代號」（原名不等於 bundle ID 時），兩個 App 同帳號簽名就會是同一個 group。SideStore 不會寫 `ALTAppGroups`（那是 AltStore 才有），改過的名稱要從 App 裡的 `embedded.mobileprovision` 讀。網路上只找到「App 和自己的小工具」共用成功的例子，兩個獨立 App 要實測。
 

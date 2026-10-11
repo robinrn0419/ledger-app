@@ -114,7 +114,34 @@ struct LedgerWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
+        .containerBackground(for: .widget) {
+            /* 使用者說背景單調，選了「角落淡淡的大錢包」（像課堂薪水主頁方塊角落的大圖示），只露出一部分 */
+            ZStack(alignment: .bottomTrailing) {
+                Color(uiColor: .systemBackground)
+                WalletMark()
+                    .frame(width: 124, height: 124)
+                    .offset(x: 22, y: 30)
+            }
+        }
+    }
+}
+
+/* App 圖示那個錢包（SVG viewBox 100：綠卡片斜斜露出、錢包本體、扣帶、扣子），畫得很淡 */
+struct WalletMark: View {
+    var body: some View {
+        Canvas { ctx, size in
+            let s = size.width / 100
+            func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ r: CGFloat) -> Path {
+                Path(roundedRect: CGRect(x: x * s, y: y * s, width: w * s, height: h * s), cornerRadius: r * s)
+            }
+            let turn = CGAffineTransform(translationX: 49 * s, y: 34 * s)
+                .rotated(by: -10 * .pi / 180)
+                .translatedBy(x: -49 * s, y: -34 * s)
+            ctx.fill(rect(28, 20, 42, 28, 5).applying(turn), with: .color(Color(red: 0x78 / 255, green: 0xBC / 255, blue: 0x96 / 255).opacity(0.28)))
+            ctx.fill(rect(18, 36, 64, 44, 9), with: .color(.primary.opacity(0.09)))
+            ctx.fill(rect(56, 49, 30, 18, 7), with: .color(.primary.opacity(0.07)))
+            ctx.fill(Path(ellipseIn: CGRect(x: 62.5 * s, y: 54.5 * s, width: 7 * s, height: 7 * s)), with: .color(.primary.opacity(0.12)))
+        }
     }
 }
 
