@@ -89,8 +89,8 @@ struct LedgerWidgetView: View {
     }
 
     var body: some View {
-        /* 使用者說字太小：邊距自己控制（比系統預設窄），數字和那句話都盡量放大，放不下才縮 */
-        VStack(alignment: .leading, spacing: 0) {
+        /* 字盡量大、放不下才縮；三行靠在一起、整組上下置中（使用者說原本中間空太多、偏一邊）。邊距用系統預設。 */
+        VStack(alignment: .leading, spacing: 4) {
             Text("財產總額")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.secondary)
@@ -100,7 +100,6 @@ struct LedgerWidgetView: View {
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
-                Spacer(minLength: 2)
                 if !d.mood.isEmpty {
                     Text(d.mood)
                         .font(.system(size: 22, weight: .heavy))
@@ -109,14 +108,12 @@ struct LedgerWidgetView: View {
                         .minimumScaleFactor(0.6)
                 }
             } else {
-                Spacer(minLength: 2)
                 Text("打開記一筆一次，這裡就會顯示總額")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
     }
 }
@@ -130,6 +127,5 @@ struct LedgerWidget: Widget {
         .configurationDisplayName("財產總額")
         .description("記一筆的財產總額，和這個月花錢的狀況。")
         .supportedFamilies([.systemSmall])
-        .contentMarginsDisabled()  // 邊距改由畫面自己的 padding(12) 決定
     }
 }
