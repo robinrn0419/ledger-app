@@ -147,6 +147,7 @@
 - `ios/`：從課堂薪水 `git archive` 複製，只改了 `PRODUCT_BUNDLE_IDENTIFIER`（`io.github.robinrn0419.ledger`）、Info.plist 的 `CFBundleDisplayName`（`Ledger`）、`en.lproj`／`zh-Hant.lproj/InfoPlist.strings`（「記一筆」）、App 圖示。
 - `capacitor.config.json`、`package.json`（Capacitor 8.5.3 + haptics 8.0.2，同課堂薪水）、`.gitignore`、`.github/workflows/build.yml`（同課堂薪水，ipa 叫 `Ledger.ipa`）、`scripts/make-source.js`。
 - 圖示：`www/icon.png`（512）和 `AppIcon-512@2x.png`（1024），使用者選「跟課堂薪水同一系列」：同樣深色底 #15181A、淺色 #DDDFD9、灰 #7A7E7B、綠 #78BC96 的直線；左邊一條直線像帳本邊，四筆紀錄，最上面一筆綠色。用 PowerShell System.Drawing 畫的（腳本放在當時的 scratchpad，沒留在專案裡）。
+  - **2026-10-11 換成「錢包」**：使用者說舊圖示「不像記帳」，第一輪抽象草稿（粗線帳本、「記」字、收據、＋、圓餅、硬幣）也說不像；第二輪偏具體的物品裡選了錢包。深色底 #15181A、淺色錢包 #F4F5F2、灰色扣帶 #A3A7A2、露出一張綠卡片 #78BC96。用 SVG（viewBox 100）寫，再用 Edge headless `--screenshot` 輸出 1024／512 PNG（RGB 無透明）。SVG：`<rect width=100 height=100 fill=#15181A/><rect x=28 y=20 w=42 h=28 rx=5 fill=#78BC96 rotate(-10 49 34)/><rect x=18 y=36 w=64 h=44 rx=9 fill=#F4F5F2/><rect x=56 y=49 w=30 h=18 rx=7 fill=#A3A7A2/><circle cx=66 cy=58 r=3.5 fill=#15181A/>`。
 - 網頁版：使用者要「跟課堂薪水一樣」也發布網頁版。**和課堂薪水不同**：沒有 `web-offline/` 資料夾要手動同步，改由 `scripts/make-web.js` 在 Actions 裡從 `www/index.html` 自動產生（加 PWA head、註冊 sw.js；sw.js 的快取版本 = 打包編號，不用手動加一）。網頁版的資料和 App 是分開的。
 - 預計網址：repo https://github.com/robinrn0419/ledger-app ；網頁版 https://robinrn0419.github.io/ledger-app/ ；SideStore 來源 https://robinrn0419.github.io/ledger-app/source.json （repo 要公開，免費帳號的 GitHub Pages 才能用）。
 
