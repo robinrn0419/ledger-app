@@ -285,6 +285,113 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .mood[data-lv="bad"]{color:var(--mood-bad)}
 .mood[data-lv="warn"]{color:var(--mood-warn)}
 .mood[data-lv="ok"],.mood[data-lv="good"],.mood[data-lv="zero"]{color:var(--mood-good)}
+/* 那句話右邊的小寵物 */
+.mood-row{display:flex;align-items:center;gap:6px;margin-top:16px}
+.mood-row .mood{flex:1;margin:0 4px}
+.pet{flex:none;width:160px;height:124px;margin:-12px -8px -12px 0}
+.pet svg{display:block;width:100%;height:100%;overflow:visible}
+.pet g,.pet rect,.pet text{transform-box:fill-box}
+.pet text{font-family:ui-monospace,monospace;font-weight:700}
+/* 身材（外層） */
+.pt-bm-flat{animation:pt-struggle 2.6s infinite;transform-origin:50% 100%}
+@keyframes pt-struggle{0%,40%,100%{transform:none}50%{transform:scaleY(1.35)}56%{transform:scaleY(1.3) translateX(-.4px)}62%{transform:scaleY(1.3) translateX(.4px)}68%{transform:scaleY(1.32)}78%{transform:scaleY(.85)}86%{transform:none}}
+.pt-bm-thin{animation:pt-sway 3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.pt-bm-normal{animation:pt-idle 2.4s infinite;transform-origin:50% 100%}
+@keyframes pt-idle{0%,70%,100%{transform:none}78%{transform:scale(1.03,.95)}86%{transform:translateY(-.8px)}94%{transform:none}}
+.pt-bm-round{animation:pt-jiggle 1.8s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-jiggle{0%,100%{transform:none}20%{transform:scale(1.05,.93) rotate(-3deg)}45%{transform:scale(.97,1.04) rotate(2deg)}70%{transform:scale(1.03,.96) rotate(-1deg)}}
+/* 剛記完一筆（只跑一次） */
+.pt-r-nod{animation:pt-rnod .7s;transform-origin:50% 100%}
+@keyframes pt-rnod{40%{transform:translateY(1.5px) scaleY(.92)}}
+.pt-r-hop{animation:pt-rhop .9s;transform-origin:50% 100%}
+@keyframes pt-rhop{20%{transform:scale(1.06,.9)}50%{transform:translateY(-14%)}80%{transform:none}90%{transform:scale(1.04,.94)}}
+.pt-r-happy{animation:pt-rhappy 1.4s;transform-origin:50% 100%}
+@keyframes pt-rhappy{12%{transform:scale(1.12,.82)}35%,55%{transform:translateY(-34%) scale(.94,1.08)}75%{transform:none}85%{transform:scale(1.1,.86)}}
+.pt-r-shock{animation:pt-rshock 1.4s;transform-origin:50% 100%}
+@keyframes pt-rshock{12%,35%{transform:translateY(-22%) scale(.92,1.1)}50%{transform:none}56%,68%{transform:translateX(-3%)}62%,74%{transform:translateX(3%)}80%{transform:none}}
+/* 眨眼 */
+.pt-blink .pt-eyes{animation:pt-blink 3.2s infinite;transform-origin:50% 50%}
+@keyframes pt-blink{0%,90%,100%{transform:none}94%{transform:scaleY(.15)}}
+/* 表情（內層） */
+.pt-fm-bad{animation:pt-sob .9s infinite;transform-origin:50% 100%}
+.pt-fm-cry2{animation:pt-sob .5s infinite;transform-origin:50% 100%}
+@keyframes pt-sob{25%,75%{transform:translateY(.4px) scaleY(.97)}50%{transform:none}}
+.pt-tear{animation:pt-tear 1.2s infinite}.pt-t2{animation-delay:.6s}.pt-t3{animation-delay:.3s}
+@keyframes pt-tear{0%{transform:none;opacity:0}15%{opacity:1}100%{transform:translateY(4px);opacity:0}}
+.pt-fm-faint{animation:pt-faint 3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-faint{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(6deg) translateY(.3px)}}
+.pt-orbit{animation:pt-orbit 1.4s linear infinite}.pt-o2{animation-delay:-.7s}
+@keyframes pt-orbit{25%{transform:translate(3px,-1px)}50%{transform:translate(6px,0)}75%{transform:translate(3px,1px)}}
+.pt-fm-panic{animation:pt-panic .18s infinite;transform-origin:50% 100%}
+@keyframes pt-panic{0%,100%{transform:translateX(-.5px)}50%{transform:translateX(.5px)}}
+.pt-fm-warn .pt-eyes{animation:pt-glance 2.6s infinite}
+@keyframes pt-glance{0%,15%,85%,100%{transform:none}25%,45%{transform:translateX(-1px)}55%,75%{transform:translateX(1px)}}
+.pt-sweat{animation:pt-sweat 1.6s infinite}
+@keyframes pt-sweat{0%{transform:none;opacity:0}20%{opacity:1}100%{transform:translateY(3px);opacity:0}}
+.pt-fm-grit{animation:pt-shiver .1s infinite}
+@keyframes pt-shiver{0%,100%{transform:translateX(-.2px)}50%{transform:translateX(.2px)}}
+.pt-fm-peek .pt-eyes{animation:pt-peek 2.4s infinite}
+@keyframes pt-peek{0%,40%,100%{transform:none}50%,90%{transform:translate(-1px,-1px)}}
+.pt-coin{animation:pt-coin 1.2s infinite}
+@keyframes pt-coin{50%{transform:translateY(-1px)}}
+.pt-fm-sigh{animation:pt-sigh 3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-sigh{0%,30%,100%{transform:none}55%{transform:scale(1.03,.9)}}
+.pt-puff{animation:pt-puff 3s infinite;opacity:0}.pt-p2{animation-delay:.25s}
+@keyframes pt-puff{0%,40%{opacity:0;transform:none}55%{opacity:.9}100%{opacity:0;transform:translate(5px,-2px)}}
+.pt-fm-smile,.pt-fm-love{animation:pt-bob 2s ease-in-out infinite;transform-origin:50% 100%}
+.pt-fm-love{animation-duration:1.2s}
+@keyframes pt-bob{50%{transform:translateY(-.6px)}}
+.pt-fm-hum{animation:pt-hum 1.6s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-hum{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+.pt-note{animation:pt-float 2s infinite;opacity:0;font-size:3px}.pt-n2{animation-delay:1s;font-size:2.6px}
+.pt-fm-daze{animation:pt-daze 4s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-daze{50%{transform:translateX(.5px) rotate(2deg)}}
+.pt-dot{animation:pt-dot 2.4s infinite;opacity:0}.pt-d2{animation-delay:.4s}.pt-d3{animation-delay:.8s}
+@keyframes pt-dot{0%,10%{opacity:0}20%,70%{opacity:1}80%,100%{opacity:0}}
+.pt-heart{animation:pt-heart .6s infinite;transform-origin:50% 50%}
+@keyframes pt-heart{50%{transform:scale(1.35)}}
+.pt-fm-cool{animation:pt-nodding 1s infinite;transform-origin:50% 100%}
+@keyframes pt-nodding{50%{transform:translateY(.5px)}}
+.pt-gleam{animation:pt-gleam 2.4s infinite}
+@keyframes pt-gleam{0%,50%{transform:none;opacity:0}55%{opacity:1}80%{transform:translateX(7px);opacity:1}85%,100%{opacity:0}}
+.pt-fm-blush{animation:pt-wiggle .8s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.pt-cheek{animation:pt-cheek 1.6s infinite}
+@keyframes pt-cheek{0%,100%{opacity:.5}50%{opacity:1}}
+.pt-fm-good,.pt-fm-money,.pt-fm-confetti{animation:pt-gladhop 1.2s infinite;transform-origin:50% 100%}
+.pt-fm-money,.pt-fm-confetti{animation-duration:1s}
+@keyframes pt-gladhop{15%{transform:scale(1.05,.92)}40%{transform:translateY(-1.6px)}65%{transform:none}}
+.pt-fm-good .pt-armL,.pt-x-happy .pt-armL,.pt-fm-confetti .pt-armL{animation:pt-wave .3s infinite alternate}
+.pt-fm-good .pt-armR,.pt-x-happy .pt-armR,.pt-fm-confetti .pt-armR{animation:pt-wave .3s infinite alternate-reverse}
+@keyframes pt-wave{to{transform:translateY(-1.5px)}}
+.pt-fm-zero{animation:pt-spin 2.4s infinite;transform-origin:50% 100%}
+@keyframes pt-spin{0%,55%,100%{transform:none}65%{transform:translateY(-1.5px) scaleX(-1)}75%{transform:scaleX(-1)}85%{transform:translateY(-1.5px)}95%{transform:none}}
+.pt-star{animation:pt-twinkle 1.1s infinite;transform-origin:50% 50%}.pt-s2{animation-delay:.55s}
+@keyframes pt-twinkle{0%,100%{transform:scale(.3);opacity:.3}50%{transform:scale(1.2);opacity:1}}
+.pt-fall{animation:pt-fall 1.8s linear infinite;opacity:0}.pt-f1{animation-delay:.6s}.pt-f2{animation-delay:1.2s}
+@keyframes pt-fall{0%{opacity:0;transform:none}10%{opacity:1}100%{opacity:0;transform:translateY(11px) rotate(180deg)}}
+.pt-fm-crown{animation:pt-puffup 2.4s infinite;transform-origin:50% 100%}
+@keyframes pt-puffup{0%,50%,100%{transform:none}65%,85%{transform:scale(1.06,1.04) translateY(-.5px)}}
+.pt-crown{animation:pt-crownbob 2.4s infinite}
+@keyframes pt-crownbob{0%,50%,100%{transform:none}65%,85%{transform:translateY(-1px)}}
+/* 時間（內層） */
+.pt-x-sleep{animation:pt-breathe 3.2s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-breathe{50%{transform:scale(1.04,.93)}}
+.pt-zz{animation:pt-float 3s infinite;opacity:0;font-size:3px}.pt-z2{animation-delay:1s;font-size:2.4px}.pt-z3{animation-delay:2s;font-size:2px}
+@keyframes pt-float{0%{opacity:0;transform:none}25%{opacity:1}100%{opacity:0;transform:translate(3px,-4px)}}
+.pt-x-stretch{animation:pt-stretch 3s infinite;transform-origin:50% 100%}
+@keyframes pt-stretch{0%,15%,85%,100%{transform:none}40%,65%{transform:scale(.96,1.1)}}
+.pt-x-stretch .pt-arms rect{animation:pt-raise 3s infinite;transform-origin:50% 100%}
+@keyframes pt-raise{0%,15%,85%,100%{transform:scaleY(.3)}40%,65%{transform:scaleY(1.15)}}
+.pt-x-hungry{animation:pt-wob 1.6s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes pt-wob{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(2deg)}}
+.pt-rub{animation:pt-rub .5s ease-in-out infinite alternate}
+@keyframes pt-rub{to{transform:translateX(-2px)}}
+.pt-drool{animation:pt-drool 1.6s infinite;transform-origin:50% 0}
+@keyframes pt-drool{0%,100%{transform:scaleY(.5)}70%{transform:scaleY(2.2)}}
+.pt-gulu{animation:pt-gulu .8s infinite;font-family:inherit;font-size:2.2px}
+@keyframes pt-gulu{0%,100%{opacity:.25;transform:none}50%{opacity:1;transform:translateY(-.5px)}}
 .home-chart{gap:20px;margin-top:22px;padding:0;background:none;border-radius:0;transition:opacity .15s}
 .home-chart:active{background:none;opacity:.55}
 .home-legend .hl{font-size:15px}
@@ -337,7 +444,10 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
         <span class="total-num"><output id="total">0</output><span>元</span></span>
         <span class="total-sub" id="startLine"></span>
       </button>
-      <p class="mood" id="mood" hidden></p>
+      <div class="mood-row" id="moodRow" hidden>
+        <p class="mood" id="mood" hidden></p>
+        <span class="pet" id="pet" aria-hidden="true"></span>
+      </div>
       <button type="button" class="setup" id="setupBtn" hidden>
         <span>先填目前有多少錢<small>存款加現金，之後會自動加收入、減支出</small></span>
         <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
@@ -749,6 +859,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('monthOut').textContent=(mout?'−':'')+fmt(mout);
     paintMood(min,mout);
     var mb=$('mood');
+    $('moodRow').hidden=mb.hidden;
+    if(!mb.hidden)paintPet((db.start||0)+sin-sout,mb.dataset.lv);
     pushWidget({total:Math.round((db.start||0)+sin-sout),mood:mb.hidden?'':mb.textContent,lv:mb.hidden?'':mb.dataset.lv});
 
     var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
@@ -821,6 +933,125 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     for(var i=0;i<key.length;i++)h=(h*31+key.charCodeAt(i))>>>0;
     box.textContent=list[h%list.length];
     box.dataset.lv=lv;
+  }
+
+  /* ---------- 那句話右邊的小寵物 ---------- */
+  /* 身材看財產總額；表情看那句話的狀況（每次打開 App 隨機換一個）；
+     時間到了有小動作（睡覺、伸懶腰、肚子餓）；剛記完一筆會依金額有大小不同的反應。
+     用 22×17 格的像素畫，每個部位分開放，才能各自動。 */
+  var PET_BODY={
+    flat:  {bx:2,by:8,bw:12,bh:3,arms:[[0,10,2,1],[14,10,2,1]],legs:[[3,11,1,1],[5,11,1,1],[10,11,1,1],[12,11,1,1]]},
+    thin:  {bx:4,by:2,bw:8,bh:8,arms:[[2,5,2,2],[12,5,2,2]],legs:[[5,10,1,2],[7,10,1,2],[8,10,1,2],[10,10,1,2]]},
+    normal:{bx:3,by:3,bw:10,bh:7,arms:[[1,6,2,2],[13,6,2,2]],legs:[[4,10,1,2],[6,10,1,2],[9,10,1,2],[11,10,1,2]]},
+    round: {bx:1,by:2,bw:14,bh:9,round:true,arms:[[-1,6,2,2],[15,6,2,2]],legs:[[4,11,1,1],[6,11,1,1],[9,11,1,1],[11,11,1,1]]}
+  };
+  var PET_FACES={
+    bad:['bad','cry2','faint','panic'],       /* 哭、大哭、昏倒、崩潰 */
+    warn:['warn','grit','peek','sigh'],       /* 冒汗、咬牙、偷看錢包、嘆氣 */
+    ok:['ok','smile','hum','daze'],           /* 普通、微笑、哼歌、發呆 */
+    good:['good','love','cool','blush'],      /* 笑、愛心眼、戴墨鏡、臉紅 */
+    zero:['zero','money','crown','confetti']  /* 閃亮亮、錢錢眼、戴皇冠、撒花 */
+  };
+  var PC={o:'#D97757',d:'#1F1E1D',w:'#FFFFFF',t:'#5AA9E6',y:'#F5C542',p:'#FF5C8A',g:'#9AA0A6',s:'var(--sec)'};
+  function petBody(total){return total<0?'flat':total<2500?'thin':total<10000?'normal':'round'}
+  function petTime(now){
+    var h=now.getHours();
+    if(h>=23||h<6)return 'sleep';
+    if(h>=6&&h<9)return 'stretch';
+    if(h>=11&&h<13||h>=17&&h<19)return 'hungry';
+    return null;
+  }
+  function petSvg(o){
+    var bn=o.body,b=PET_BODY[bn],f=o.face,act=o.act;
+    var body=[],armL=[],armR=[],legs=[],eyes=[],fx=[],front=[];
+    function R(a,x,y,w,h,c,cls){a.push('<rect'+(cls?' class="'+cls+'"':'')+' x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'"/>')}
+    function T(a,x,y,txt,c,cls){a.push('<text class="'+cls+'" x="'+x+'" y="'+y+'" fill="'+c+'">'+txt+'</text>')}
+    /* 身體、手、腳 */
+    if(b.round){R(body,b.bx+1,b.by,b.bw-2,b.bh,PC.o);R(body,b.bx,b.by+1,b.bw,b.bh-2,PC.o)}
+    else R(body,b.bx,b.by,b.bw,b.bh,PC.o);
+    var arms=b.arms;
+    if(act==='stretch')arms=[[b.bx-1,b.by-3,1,4],[b.bx+b.bw,b.by-3,1,4]];
+    if(act==='shock')arms=[[b.bx-2,b.by-1,2,1],[b.bx+b.bw,b.by-1,2,1]];
+    R(armL,arms[0][0],arms[0][1],arms[0][2],arms[0][3],PC.o);
+    if(act==='hungry')R(front,b.bx+b.bw-4,b.by+b.bh-2,3,1,'#B85E40','pt-rub');
+    else R(armR,arms[1][0],arms[1][1],arms[1][2],arms[1][3],PC.o);
+    if(act==='shock'){R(armL,b.bx-2,b.by-2,1,1,PC.o);R(armR,b.bx+b.bw+1,b.by-2,1,1,PC.o)}
+    b.legs.forEach(function(l){R(legs,l[0],l[1],l[2],l[3],PC.o)});
+    /* 眼睛 */
+    var ey=bn==='flat'?b.by+1:b.by+Math.max(1,Math.round(b.bh*.3)),pad=b.bw>=12?3:2,
+        ex=[b.bx+pad,b.bx+b.bw-pad-1],mx=Math.round(b.bx+b.bw/2),ef=f;
+    if(act==='sleep'||act==='stretch')ef='closed';
+    if(act==='shock')ef='wide';
+    if(act==='happy')ef='good';
+    ex.forEach(function(x,i){
+      var l=x-(i?0:1),side=i?x+1:x-1;
+      if(/^(ok|bad|warn|grit|smile)$/.test(ef))R(eyes,x,ey,1,2,PC.d);
+      else if(/^(good|hum|blush|confetti)$/.test(ef)){R(eyes,x-1,ey+1,1,1,PC.d);R(eyes,x,ey,1,1,PC.d);R(eyes,x+1,ey+1,1,1,PC.d)}
+      else if(ef==='zero'||ef==='crown'){R(eyes,l,ey,2,2,PC.d);R(eyes,l,ey,1,1,PC.w)}
+      else if(ef==='closed'||ef==='cry2')R(eyes,l,ey+1,2,1,PC.d);
+      else if(ef==='wide'){R(eyes,l,ey-1,2,3,PC.w);R(eyes,x,ey,1,1,PC.d)}
+      else if(ef==='faint'){R(eyes,x-1,ey-1,1,1,PC.d);R(eyes,x+1,ey-1,1,1,PC.d);R(eyes,x,ey,1,1,PC.d);R(eyes,x-1,ey+1,1,1,PC.d);R(eyes,x+1,ey+1,1,1,PC.d)}
+      else if(ef==='panic'){R(eyes,side,ey-1,1,1,PC.d);R(eyes,x,ey,1,1,PC.d);R(eyes,side,ey+1,1,1,PC.d)}
+      else if(ef==='peek')R(eyes,x+1,ey+1,1,1,PC.d);
+      else if(ef==='sigh'){R(eyes,l,ey+1,2,1,PC.d);R(eyes,l+(i?1:0),ey+2,1,1,PC.d)}
+      else if(ef==='daze')R(eyes,x,ey+1,1,1,PC.d);
+      else if(ef==='love'){R(eyes,x-1,ey,1,1,PC.p,'pt-heart');R(eyes,x+1,ey,1,1,PC.p,'pt-heart');R(eyes,x-1,ey+1,3,1,PC.p,'pt-heart');R(eyes,x,ey+2,1,1,PC.p,'pt-heart')}
+      else if(ef==='cool')R(eyes,x-1,ey,3,2,PC.d);
+      else if(ef==='money'){R(eyes,l,ey,2,2,PC.y);R(eyes,l+(i?0:1),ey,1,1,'#B8860B')}
+    });
+    /* 表情旁邊的小東西 */
+    if(ef==='bad')ex.forEach(function(x){R(fx,x,ey+2,1,1,PC.t,'pt-tear');R(fx,x,ey+2,1,1,PC.t,'pt-tear pt-t2')});
+    if(ef==='cry2'){R(fx,mx-1,ey+2,2,2,PC.d);[ex[0]-1,ex[1]+1].forEach(function(x){R(fx,x,ey+1,1,1,PC.t,'pt-tear');R(fx,x,ey+1,1,1,PC.t,'pt-tear pt-t2');R(fx,x,ey+1,1,1,PC.t,'pt-tear pt-t3')})}
+    if(ef==='faint'){R(fx,mx-1,ey+3,2,1,PC.d);R(fx,b.bx-1,b.by-2,1,1,PC.y,'pt-orbit');R(fx,b.bx-1,b.by-2,1,1,PC.y,'pt-orbit pt-o2')}
+    if(ef==='panic'){R(fx,mx-2,ey+3,1,1,PC.d);R(fx,mx-1,ey+2,1,1,PC.d);R(fx,mx,ey+3,1,1,PC.d);R(fx,mx+1,ey+2,1,1,PC.d)}
+    if(ef==='warn'){R(fx,b.bx+b.bw+1,b.by-1,1,1,PC.t,'pt-sweat');R(fx,b.bx+b.bw,b.by,2,2,PC.t,'pt-sweat')}
+    if(ef==='grit'){R(fx,mx-2,ey+3,4,1,PC.w);R(fx,mx-1,ey+3,1,1,PC.d);R(fx,mx+1,ey+3,1,1,PC.d)}
+    if(ef==='peek'){R(fx,b.bx+b.bw+1,b.by+b.bh-2,2,2,PC.y,'pt-coin');R(fx,b.bx+b.bw+1,b.by+b.bh-2,1,1,'#FFF3B0','pt-coin')}
+    if(ef==='sigh'){R(fx,mx,ey+3,1,1,PC.d);R(fx,mx+1,ey+3,1,1,PC.g,'pt-puff');R(fx,mx+1,ey+3,2,1,PC.g,'pt-puff pt-p2')}
+    if(ef==='smile'){R(fx,mx-2,ey+2,1,1,PC.d);R(fx,mx-1,ey+3,2,1,PC.d);R(fx,mx+1,ey+2,1,1,PC.d)}
+    if(ef==='hum'){R(fx,mx-1,ey+3,1,1,PC.d);T(fx,b.bx+b.bw,b.by,'♪',PC.s,'pt-note');T(fx,b.bx+b.bw,b.by,'♫',PC.s,'pt-note pt-n2')}
+    if(ef==='daze')[1,2,3].forEach(function(k){R(fx,b.bx+b.bw-2.5+k*1.5,b.by-2,1,1,PC.s,'pt-dot pt-d'+k)});
+    if(ef==='cool'){R(fx,ex[0],ey,ex[1]-ex[0],1,PC.d);R(fx,ex[0]-1,ey,1,1,PC.w,'pt-gleam')}
+    if(ef==='blush'){R(fx,ex[0]-2,ey+2,2,1,PC.p,'pt-cheek');R(fx,ex[1]+1,ey+2,2,1,PC.p,'pt-cheek')}
+    if(ef==='zero'){R(fx,b.bx-2,b.by-2,3,1,PC.y,'pt-star');R(fx,b.bx-1,b.by-3,1,3,PC.y,'pt-star');R(fx,b.bx+b.bw,b.by-3,2,1,PC.y,'pt-star pt-s2');R(fx,b.bx+b.bw+.5,b.by-3.5,1,2,PC.y,'pt-star pt-s2')}
+    if(ef==='money')[0,1,2].forEach(function(k){R(fx,b.bx+1+k*4,b.by-4,1,1,PC.y,'pt-fall pt-f'+k)});
+    if(ef==='crown'){var c=mx-3;R(fx,c,b.by-1,5,1,PC.y,'pt-crown');R(fx,c,b.by-3,1,2,PC.y,'pt-crown');R(fx,c+2,b.by-3,1,2,PC.y,'pt-crown');R(fx,c+4,b.by-3,1,2,PC.y,'pt-crown');R(fx,c+2,b.by-1,1,1,'#E5484D','pt-crown')}
+    if(ef==='confetti')['#E5484D','#5AA9E6',PC.y,'#3DBE6B','#B57BFF','#FF8A3D'].forEach(function(c,k){R(fx,b.bx-1+k*2.4,b.by-4,1,1,c,'pt-fall pt-f'+(k%3))});
+    /* 時間、剛記完的小東西 */
+    if(act==='hungry'){R(fx,mx-1,ey+3,2,1,PC.d);R(fx,mx,ey+4,1,1,PC.t,'pt-drool');T(fx,b.bx+b.bw+.5,b.by+b.bh+2,'咕嚕',PC.s,'pt-gulu')}
+    if(act==='sleep')['','pt-z2','pt-z3'].forEach(function(z){T(fx,b.bx+b.bw,b.by-1,'z',PC.s,'pt-zz '+z)});
+    if(act==='shock')R(fx,mx-1,b.by-4,1,2,PC.o),R(fx,mx-1,b.by-1.5,1,1,PC.o);
+    if(act==='happy'){R(fx,b.bx-3,b.by-2,3,1,PC.y,'pt-star');R(fx,b.bx-2,b.by-3,1,3,PC.y,'pt-star');R(fx,b.bx+b.bw+1,b.by-1,2,1,PC.y,'pt-star pt-s2');R(fx,b.bx+b.bw+1.5,b.by-1.5,1,2,PC.y,'pt-star pt-s2')}
+    var parts='<g class="pt-arms"><g class="pt-armL">'+armL.join('')+'</g><g class="pt-armR">'+armR.join('')+'</g></g>'+legs.join('')+body.join('')+'<g class="pt-eyes">'+eyes.join('')+'</g>'+front.join('')+fx.join('');
+    /* 外層：剛記完的反應，沒有就是身材的動作；內層：時間的動作，沒有就是表情的動作 */
+    var outer=o.react?'pt-r-'+o.react:'pt-bm-'+bn;
+    var inner=act==='happy'?'pt-x-happy':act&&act!=='shock'?'pt-x-'+act:o.react?'':'pt-fm-'+f;
+    if(/^(ok|bad|warn|zero|grit|smile|crown|peek)$/.test(ef))inner+=' pt-blink';
+    return '<svg viewBox="-3 -5 22 17" shape-rendering="crispEdges"><g class="'+outer+'"><g class="'+inner+'">'+parts+'</g></g></svg>';
+  }
+  var pet={lv:null,face:null,react:null,key:'',timer:0};
+  function paintPet(total,lv){
+    if(pet.lv!==lv){var l=PET_FACES[lv];pet.face=l[Math.floor(Math.random()*l.length)];pet.lv=lv}
+    var o={body:petBody(total),face:pet.face,act:petTime(new Date())};
+    if(pet.react){
+      o.react=pet.react;
+      o.act=pet.react==='shock'?'shock':pet.react==='happy'?'happy':null;  /* 睡覺時記帳會被吵醒 */
+    }
+    var key=JSON.stringify(o);
+    if(key===pet.key)return;  /* 樣子沒變就不重畫，動畫才不會一直從頭開始 */
+    pet.key=key;
+    $('pet').innerHTML=petSvg(o);
+  }
+  /* 記完一筆：和平常同一種（收入／支出）的一筆平均比，決定反應多大 */
+  function petReact(rec){
+    var n=0,sum=0;
+    db.recs.forEach(function(r){if(r.kind===rec.kind&&r.id!==rec.id){n++;sum+=r.amt}});
+    var x=n?rec.amt/(sum/n):1;
+    pet.react=x<1?'nod':x<3?'hop':rec.kind==='out'?'shock':'happy';
+    clearTimeout(pet.timer);
+    var big=pet.react==='shock'||pet.react==='happy';
+    if(big)setTimeout(function(){buzz.tap('HEAVY')},450);
+    pet.timer=setTimeout(function(){pet.react=null;if(current===1)paintHome()},big?1500:1000);
   }
 
   function fitTotal(){
@@ -971,7 +1202,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:'',proj:null,src:'manual',ref:null,at:now,upd:now};
     db.recs.push(rec);
     if(!save()){db.recs.pop();return}
-    buzz.note('SUCCESS');freshId=rec.id;show(1,true);
+    buzz.note('SUCCESS');freshId=rec.id;petReact(rec);show(1,true);
     toast('已加入 '+label,function(){
       db.recs=db.recs.filter(function(x){return x.id!==rec.id});save();if(current===1)paintHome();
     });
@@ -1598,6 +1829,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   /* 從背景回來時，「今天」和「本月」可能已經換了 */
   document.addEventListener('visibilitychange',function(){
     if(document.visibilityState!=='visible')return;
+    pet.lv=null;  /* 每次打開都換一個表情 */
     if(current===1)paintHome();
     syncClassPay();  /* 可能剛在課堂薪水算完一筆 */
   });

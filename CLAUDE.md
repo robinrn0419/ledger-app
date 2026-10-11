@@ -123,6 +123,14 @@
 - 從課堂薪水來的紀錄在記一筆裡**唯讀**（不能改、不能刪，要改回課堂薪水改）。
 - 課堂薪水紀錄欄位：`{id(=recId,也是建立時間), t, sub:'teach'|'code'|'model'|'pcb', pay, total, unit, sum}`，金額用 `total`，日期用 `t`。
 
+**主頁小寵物（2026-10-11）**：那句話右邊（`#moodRow` 裡的 `#pet`，160×124；那句話不顯示時一起藏）一隻 Claude Code 風格的橘色像素小怪獸（`#D97757`），`petSvg()` 用 22×17 格的 SVG 畫，部位分組才能各自動；CSS class 和 keyframes 都用 `pt-` 開頭避免撞名。使用者決定的：
+- 身材看財產總額（`petBody`）：0 以下扁扁的、0–2,500 瘦、2,500–10,000 普通、10,000 以上圓滾滾（使用者說「5000 普通、一萬以上圓滾滾」），每種身材有自己的動作（撐不起來、站不穩晃、偶爾彈、肉抖）。
+- 表情跟著那句話的 5 種狀況，每種 4 個（`PET_FACES`：哭／大哭／昏倒／崩潰、冒汗／咬牙／偷看錢包／嘆氣、普通／微笑／哼歌／發呆、笑／愛心眼／戴墨鏡／臉紅、閃亮亮／錢錢眼／戴皇冠／撒花），**每次打開 App（含從背景回來）隨機換**，每個表情都有動作（使用者要「都要有動作」）。
+- 時間（`petTime`）：23–6 睡覺（飄 z）、6–9 伸懶腰、11–13 和 17–19 肚子餓。蓋過表情的動作，眼睛照時間動作畫。
+- 剛記完新的一筆（`petReact`，只有新增，不含修改和課堂薪水匯入）：和同一種（收入／支出）其他紀錄的平均比，<1 倍點頭、1–3 倍小跳、≥3 倍支出嚇一大跳／收入開心大跳＋450ms 後 HEAVY 震動；跑一次後回到平常樣子。睡覺時間記帳會被吵醒。
+- 樣子沒變就不重畫（`pet.key`），動畫才不會每次 paintHome 都從頭開始。
+- 只在 App 主頁，桌面小工具沒有寵物。
+
 **桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**
 - `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
 - 小工具程式在 `ios/App/Widget/`（`LedgerWidget.swift`、`Info.plist`、`Widget.entitlements` 同 App 的 group），iOS 17 起。使用者沒有 Mac，`build.yml` 每次打包用 `scripts/add-widget.rb`（xcodeproj gem）把 Widget target 加進專案、嵌進 App.app/PlugIns；臨時簽名時 appex 用自己的 entitlements 簽，找不到 Widget.appex 就讓打包失敗。
