@@ -102,7 +102,7 @@ struct LedgerWidgetView: View {
                     .minimumScaleFactor(0.5)
                 if !d.mood.isEmpty {
                     Text(d.mood)
-                        .font(.system(size: 22, weight: .heavy))
+                        .font(.system(size: 17, weight: .semibold))  // 比數字低調，數字才是主角
                         .foregroundStyle(LedgerWidgetView.color(d.lv))
                         .lineLimit(3)
                         .minimumScaleFactor(0.6)
