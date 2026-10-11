@@ -89,37 +89,34 @@ struct LedgerWidgetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        /* 使用者說字太小：邊距自己控制（比系統預設窄），數字和那句話都盡量放大，放不下才縮 */
+        VStack(alignment: .leading, spacing: 0) {
             Text("財產總額")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.secondary)
             if let d = entry.data {
-                HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text(LedgerWidgetView.money(d.total))
-                        .font(.system(size: 34, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.4)
-                    Text("元")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 4)
+                Text(LedgerWidgetView.money(d.total))
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                Spacer(minLength: 2)
                 if !d.mood.isEmpty {
                     Text(d.mood)
-                        .font(.system(size: 16, weight: .heavy))
+                        .font(.system(size: 22, weight: .heavy))
                         .foregroundStyle(LedgerWidgetView.color(d.lv))
                         .lineLimit(3)
-                        .minimumScaleFactor(0.7)
+                        .minimumScaleFactor(0.6)
                 }
             } else {
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 Text("打開記一筆一次，這裡就會顯示總額")
-                    .font(.footnote)
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(12)
         .containerBackground(for: .widget) { Color(uiColor: .systemBackground) }
     }
 }
@@ -133,5 +130,6 @@ struct LedgerWidget: Widget {
         .configurationDisplayName("財產總額")
         .description("記一筆的財產總額，和這個月花錢的狀況。")
         .supportedFamilies([.systemSmall])
+        .contentMarginsDisabled()  // 邊距改由畫面自己的 padding(12) 決定
     }
 }

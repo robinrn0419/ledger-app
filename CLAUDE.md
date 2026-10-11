@@ -123,6 +123,12 @@
 - 從課堂薪水來的紀錄在記一筆裡**唯讀**（不能改、不能刪，要改回課堂薪水改）。
 - 課堂薪水紀錄欄位：`{id(=recId,也是建立時間), t, sub:'teach'|'code'|'model'|'pcb', pay, total, unit, sum}`，金額用 `total`，日期用 `t`。
 
+**桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**
+- `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
+- 小工具程式在 `ios/App/Widget/`（`LedgerWidget.swift`、`Info.plist`、`Widget.entitlements` 同 App 的 group），iOS 17 起。使用者沒有 Mac，`build.yml` 每次打包用 `scripts/add-widget.rb`（xcodeproj gem）把 Widget target 加進專案、嵌進 App.app/PlugIns；臨時簽名時 appex 用自己的 entitlements 簽，找不到 Widget.appex 就讓打包失敗。
+- SideStore（讀原始碼）：iOS 13.5 以上擴充功能**不算**進 3 個 App 上限，但每個擴充功能要多一個 App ID（免費帳號每 7 天 10 個）。第一次裝會跳「App Contains Extensions」，要選 **Keep App Extensions (Register App ID for Each Extension)**；「Use Main Profile」讓小工具借 App 的簽名，身分對不上，不要選。
+- 使用者說字太小（v1.0.11 → 下一版）：標題 16、數字 48（拿掉「元」，最小縮到 0.5）、那句話 22 特粗，邊距 12（`contentMarginsDisabled`）。
+
 查證（2026-10-10，讀 SideStore 原始碼，0.7.0-alpha tag 也一樣）：免費帳號允許的功能只有 App Group 和 Inter-App Audio，所以 App Group 可用。SideStore 從 App **簽名裡的 entitlements** 讀要哪些 group，註冊成「原名 + . + 團隊代號」（原名不等於 bundle ID 時），兩個 App 同帳號簽名就會是同一個 group。SideStore 不會寫 `ALTAppGroups`（那是 AltStore 才有），改過的名稱要從 App 裡的 `embedded.mobileprovision` 讀。網路上只找到「App 和自己的小工具」共用成功的例子，兩個獨立 App 要實測。
 
 做法分三步：1. 實測能不能共用（只顯示讀不讀得到）→ 2. 能用就做真的匯入、課堂薪水加班別 → 3. 不能用就改來回跳轉。
