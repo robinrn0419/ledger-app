@@ -10,6 +10,11 @@
   --fill:rgba(118,118,128,.12);--press:rgba(60,60,67,.1);--key-press:#D1D1D6;--seg:#FFFFFF;
   --bar:rgba(242,242,247,.88);--tint:#007AFF;--on-tint:#FFFFFF;--in:#248A3D;--out:#000000;--red:#FF3B30;--mood-bad:#D70015;--mood-warn:#C93400;--mood-good:#248A3D;
   --ease:cubic-bezier(.2,.8,.2,1);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  /* Liquid Glass：半透明底、上緣亮光、細亮邊、柔和影子 */
+  --glass:rgba(255,255,255,.52);--glass-hi:rgba(255,255,255,.9);--glass-edge:rgba(255,255,255,.6);
+  --glass-shade:rgba(0,0,0,.06);--glass-drop:0 8px 28px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06);
+  --glass-tint:rgba(0,122,255,.82);--glass-fade:rgba(242,242,247,.72);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   --round:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"PingFang TC",system-ui,sans-serif;
   box-sizing:border-box;
@@ -20,12 +25,18 @@
     --bg:#000000;--card:#1C1C1E;--label:#FFFFFF;--sec:rgba(235,235,245,.6);--sep:rgba(84,84,88,.65);
     --fill:rgba(118,118,128,.24);--press:rgba(235,235,245,.1);--key-press:#3A3A3C;--seg:#636366;
     --bar:rgba(0,0,0,.82);--tint:#0A84FF;--in:#30D158;--out:#FFFFFF;--red:#FF453A;--mood-bad:#FF453A;--mood-warn:#FF9F0A;--mood-good:#30D158;
+    --glass:rgba(58,58,62,.46);--glass-hi:rgba(255,255,255,.28);--glass-edge:rgba(255,255,255,.16);
+    --glass-shade:rgba(0,0,0,.25);--glass-drop:0 8px 28px rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.3);
+    --glass-tint:rgba(10,132,255,.78);--glass-fade:rgba(0,0,0,.6);
   }
 }
 :root[data-theme="dark"]{
   --bg:#000000;--card:#1C1C1E;--label:#FFFFFF;--sec:rgba(235,235,245,.6);--sep:rgba(84,84,88,.65);
   --fill:rgba(118,118,128,.24);--press:rgba(235,235,245,.1);--key-press:#3A3A3C;--seg:#636366;
   --bar:rgba(0,0,0,.82);--tint:#0A84FF;--in:#30D158;--out:#FFFFFF;--red:#FF453A;--mood-bad:#FF453A;--mood-warn:#FF9F0A;--mood-good:#30D158;
+  --glass:rgba(58,58,62,.46);--glass-hi:rgba(255,255,255,.28);--glass-edge:rgba(255,255,255,.16);
+  --glass-shade:rgba(0,0,0,.25);--glass-drop:0 8px 28px rgba(0,0,0,.45),0 1px 3px rgba(0,0,0,.3);
+  --glass-tint:rgba(10,132,255,.78);--glass-fade:rgba(0,0,0,.6);
 }
 *,*::before,*::after{box-sizing:inherit}
 html{height:100%;background:var(--bg)}
@@ -44,22 +55,40 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .shell{position:relative;height:100%;display:flex;flex-direction:column;max-width:520px;margin:0 auto}
 
 /* 標題列 */
-.nav{
-  flex:none;position:relative;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;
-  background:var(--bar);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
-  border-bottom:.5px solid transparent;z-index:2;transition:border-color .2s;
+/* ---------- Liquid Glass ---------- */
+/* 網頁做不出 iOS 26 原生的折射，用模糊＋飽和＋上緣亮光＋細亮邊模擬；只用在浮在內容上面的東西 */
+.glass{
+  background:var(--glass);
+  background-image:linear-gradient(180deg,var(--glass-hi) 0%,rgba(255,255,255,0) 46%);
+  background-blend-mode:soft-light;
+  -webkit-backdrop-filter:blur(14px) saturate(190%);backdrop-filter:blur(14px) saturate(190%);
+  box-shadow:inset 0 1px .5px var(--glass-hi),inset 0 0 0 .5px var(--glass-edge),inset 0 -1px 1px var(--glass-shade),var(--glass-drop);
+  transition:transform .45s var(--spring),filter .25s var(--ease),background-color .25s var(--ease);
 }
-.nav.lined{border-bottom-color:var(--sep)}
-.nav-title{position:absolute;left:100px;right:100px;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
-.nav-btn{display:flex;align-items:center;gap:3px;height:44px;padding:0 8px;color:var(--tint);transition:opacity .15s}
-.nav-btn:active{opacity:.4}
-.nav-btn svg{width:12px;height:21px;flex:none}
-.nav-btn.next{font-weight:600}
-.nav-btn:disabled{color:var(--sec);opacity:.5;cursor:default}
+.glass:active{transform:scale(1.06);filter:brightness(1.08) saturate(1.1)}
+.glass.tinted{background-color:var(--glass-tint);color:#FFFFFF}
+
+/* 標題列：浮在內容上面，往下捲時內容從底下模糊地透出來 */
+.nav{
+  position:absolute;left:0;right:0;top:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:3;
+}
+.nav::before{
+  content:"";position:absolute;inset:0 0 -14px;z-index:-1;pointer-events:none;opacity:0;transition:opacity .3s var(--ease);
+  background:linear-gradient(180deg,var(--glass-fade) 0%,transparent 100%);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  -webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent);
+}
+.nav.lined::before{opacity:1}
+.nav-title{position:absolute;left:110px;right:110px;text-align:center;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.nav-btn{display:flex;align-items:center;gap:4px;height:40px;min-width:40px;padding:0 14px 0 11px;border-radius:20px;color:var(--label);font-weight:500}
+.nav-btn svg{width:11px;height:19px;flex:none}
+.nav-btn.next{padding:0 16px;font-weight:600}
+.nav-btn:disabled{background-color:var(--glass);color:var(--sec);cursor:default;transform:none;filter:none}
 
 /* 內容區 */
 .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px))}
-.shell:has(.dock:not([hidden])) .scroll{padding-bottom:24px}  /* 有底部按鈕時，安全區由按鈕那條負責 */
+.shell:has(.nav:not([hidden])) .scroll{padding-top:58px}
+.shell:has(.dock:not([hidden])) .scroll{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}  /* 底部按鈕浮在內容上，最後一列要能捲到按鈕上面 */
 .screen{display:none}
 .screen.on{display:block;animation:push .4s var(--ease) both}
 .back .screen.on{animation-name:pop}
@@ -75,8 +104,7 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 
 /* ---------- 主頁 ---------- */
 #s1{position:relative;padding-top:18px}
-.more{position:absolute;right:0;top:16px;display:grid;place-items:center;width:36px;height:36px;border-radius:18px;background:var(--fill);color:var(--tint);transition:opacity .15s}
-.more:active{opacity:.5}
+.more{position:absolute;right:0;top:14px;z-index:2;display:grid;place-items:center;width:42px;height:42px;border-radius:21px;color:var(--label)}
 .more svg{width:20px;height:20px}
 .acts li + li::before{left:16px}
 
@@ -177,9 +205,13 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 .amt-note{min-height:18px;margin-top:2px;font-size:13px;color:var(--sec)}
 .grow{flex:1;min-height:16px}
-.seg{display:flex;padding:2px;border-radius:9px;background:var(--fill)}
-.seg button{flex:1;height:36px;border-radius:7px;font-size:16px;font-weight:500;transition:background .25s var(--ease),box-shadow .25s var(--ease),color .25s}
-.seg button[aria-pressed="true"]{background:var(--seg);font-weight:600;box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+.seg{display:flex;padding:3px;border-radius:22px;background:var(--fill);box-shadow:inset 0 0 0 .5px var(--glass-edge)}
+.seg button{flex:1;height:38px;border-radius:19px;font-size:16px;font-weight:500;transition:background .3s var(--ease),box-shadow .3s var(--ease),color .25s,transform .45s var(--spring)}
+.seg button:active{transform:scale(1.05)}
+.seg button[aria-pressed="true"]{
+  background:var(--glass);background-image:linear-gradient(180deg,var(--glass-hi) 0%,rgba(255,255,255,0) 50%);background-blend-mode:soft-light;font-weight:600;
+  box-shadow:inset 0 1px .5px var(--glass-hi),inset 0 0 0 .5px var(--glass-edge),0 4px 12px rgba(0,0,0,.12);
+}
 .seg button[data-v="in"][aria-pressed="true"]{color:var(--in)}
 .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .key{display:grid;place-items:center;height:56px;border-radius:12px;background:var(--card);font-family:var(--round);font-size:26px;font-weight:500;transition:background .1s,transform .1s}
@@ -269,28 +301,34 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 
 /* 底部按鈕 */
 .dock{
-  flex:none;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--bar);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
-  border-top:.5px solid var(--sep);
+  position:absolute;left:0;right:0;bottom:0;z-index:3;padding:22px 20px calc(14px + env(safe-area-inset-bottom,0px));pointer-events:none;
 }
-.primary{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:52px;border-radius:14px;background:var(--tint);color:var(--on-tint);font-weight:600;transition:transform .2s var(--ease),opacity .2s,background .2s}
-.primary:active{transform:scale(.975);opacity:.85}
-.primary:disabled{background:var(--fill);color:var(--sec);transform:none;opacity:1;cursor:default}
+.dock::before{
+  content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(0deg,var(--glass-fade) 0%,transparent 100%);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  -webkit-mask-image:linear-gradient(0deg,#000 40%,transparent);mask-image:linear-gradient(0deg,#000 40%,transparent);
+}
+.primary{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:56px;border-radius:28px;color:#FFFFFF;font-weight:600;font-size:18px;letter-spacing:.02em}
+.primary:disabled{background-color:var(--glass);color:var(--sec);transform:none;filter:none;cursor:default}
 .primary svg{width:20px;height:20px}
 
 /* 提示（已加入） */
 .toast{
   position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:9;
   display:flex;align-items:center;gap:12px;max-width:calc(100% - 32px);padding:10px 10px 10px 14px;
-  border-radius:24px;background:var(--card);color:var(--label);font-size:15px;font-weight:500;
-  box-shadow:0 8px 28px rgba(0,0,0,.16),0 0 0 .5px var(--sep);
-  transform:translate(-50%,-20px);opacity:0;pointer-events:none;transition:transform .4s var(--ease),opacity .25s;
+  border-radius:26px;color:var(--label);font-size:15px;font-weight:500;
+  background:var(--glass);background-image:linear-gradient(180deg,var(--glass-hi) 0%,rgba(255,255,255,0) 46%);background-blend-mode:soft-light;
+  -webkit-backdrop-filter:blur(18px) saturate(190%);backdrop-filter:blur(18px) saturate(190%);
+  box-shadow:inset 0 1px .5px var(--glass-hi),inset 0 0 0 .5px var(--glass-edge),var(--glass-drop);
+  transform:translate(-50%,-20px) scale(.92);opacity:0;pointer-events:none;transition:transform .55s var(--spring),opacity .25s;
 }
-.toast.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.toast.on{transform:translate(-50%,0) scale(1);opacity:1;pointer-events:auto}
 .toast .ok{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--in);color:#FFFFFF}
 .toast .ok svg{width:13px;height:13px}
 .toast span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-.toast button{flex:none;height:30px;padding:0 12px;border-radius:15px;background:var(--fill);color:var(--tint);font-weight:600}
+.toast button{flex:none;height:32px;padding:0 14px;border-radius:16px;background:var(--fill);color:var(--tint);font-weight:600;transition:transform .4s var(--spring)}
+.toast button:active{transform:scale(1.08)}
 .toast:not(.has-undo){padding-right:16px}
 
 /* ---------- 主頁上半部、統計頁：不分格，全部放在同一個平面上 ---------- */
@@ -445,18 +483,18 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 <body>
 <div class="shell" id="shell">
   <header class="nav" id="nav" hidden>
-    <button type="button" class="nav-btn" id="navBack">
+    <button type="button" class="nav-btn glass" id="navBack">
       <svg id="backChev" viewBox="0 0 12 21" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2 2 10.5 10 19"/></svg>
       <span id="backLabel"></span>
     </button>
     <div class="nav-title" id="navTitle"></div>
-    <button type="button" class="nav-btn next" id="navNext" hidden></button>
+    <button type="button" class="nav-btn next glass tinted" id="navNext" hidden></button>
   </header>
 
   <main class="scroll" id="scroll">
     <!-- 1 主頁 -->
     <section class="screen on" id="s1">
-      <button type="button" class="more" id="moreBtn" aria-label="資料與備份">
+      <button type="button" class="more glass" id="moreBtn" aria-label="資料與備份">
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg>
       </button>
       <button type="button" class="total" id="totalBtn">
@@ -588,7 +626,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     </section>
   </main>
 
-  <footer class="dock" id="dock"><button type="button" class="primary" id="primary"></button></footer>
+  <footer class="dock" id="dock"><button type="button" class="primary glass tinted" id="primary"></button></footer>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite">
