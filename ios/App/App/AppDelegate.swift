@@ -140,6 +140,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private var buttons: [String: UIButton] = [:]
+    private var seg: UISegmentedControl?
 
     @objc func info(_ call: CAPPluginCall) {
         if #available(iOS 26.0, *) {
@@ -149,12 +150,14 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /* set({back:{label,chevron}|null, next:{label,enabled}|null, primary:{label,plus}|null, more:true/false}) */
+    /* set({back:{label,chevron}|null, next:{label,enabled}|null, primary:{label,plus}|null, more:true/false,
+            seg:{x,y,w,h,value:'in'|'out'}|null})；seg 是輸入金額頁的「收入｜支出」，位置照網頁那顆量好傳過來 */
     @objc func set(_ call: CAPPluginCall) {
         let back = call.getObject("back")
         let next = call.getObject("next")
         let primary = call.getObject("primary")
         let more = call.getBool("more") ?? false
+        let segInfo = call.getObject("seg")
         DispatchQueue.main.async {
             if #available(iOS 26.0, *) {
                 self.buildIfNeeded()
@@ -165,6 +168,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                 self.update("primary", show: primary != nil, title: primary?["label"] as? String,
                             image: (primary?["plus"] as? Bool ?? false) ? "plus" : nil, enabled: true)
                 self.update("more", show: more, title: nil, image: "ellipsis", enabled: true)
+                self.updateSeg(segInfo)
             }
             call.resolve()
         }
@@ -214,6 +218,40 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                 ])
             }
         }
+    }
+
+    @available(iOS 26.0, *)
+    private func updateSeg(_ info: [String: Any]?) {
+        guard let root = bridge?.viewController?.view else { return }
+        guard let info = info else {
+            if let s = seg, !s.isHidden {
+                UIView.animate(withDuration: 0.2, animations: { s.alpha = 0 }) { _ in if s.alpha == 0 { s.isHidden = true } }
+            }
+            return
+        }
+        let s: UISegmentedControl
+        if let old = seg {
+            s = old
+        } else {
+            s = UISegmentedControl(items: ["收入", "支出"])
+            s.alpha = 0
+            s.setTitleTextAttributes([.font: UIFont.systemFont(ofSize: 16, weight: .medium)], for: .normal)
+            s.addAction(UIAction { [weak self, weak s] _ in
+                guard let s = s else { return }
+                self?.notifyListeners("tap", data: ["id": s.selectedSegmentIndex == 0 ? "seg-in" : "seg-out"])
+            }, for: .valueChanged)
+            root.addSubview(s)
+            seg = s
+        }
+        func num(_ k: String) -> CGFloat { CGFloat((info[k] as? NSNumber)?.doubleValue ?? 0) }
+        s.frame = CGRect(x: num("x"), y: num("y"), width: num("w"), height: num("h"))
+        let isIn = (info["value"] as? String) != "out"
+        s.selectedSegmentIndex = isIn ? 0 : 1
+        /* 選到收入時字是綠色，和網頁原本一樣 */
+        s.setTitleTextAttributes([.font: UIFont.systemFont(ofSize: 16, weight: .semibold),
+                                  .foregroundColor: isIn ? UIColor.systemGreen : UIColor.label], for: .selected)
+        s.isHidden = false
+        if s.alpha < 1 { UIView.animate(withDuration: 0.2) { s.alpha = 1 } }
     }
 
     @available(iOS 26.0, *)

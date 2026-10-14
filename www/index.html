@@ -69,6 +69,7 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .glass.tinted{background-color:var(--glass-tint);color:#FFFFFF}
 /* iOS 26 用原生的按鈕蓋在上面，網頁的藏起來（位置留著）；提示泡泡往下移，不要被原生按鈕擋住 */
 .native-glass #navBack,.native-glass #navNext,.native-glass #primary,.native-glass #moreBtn{visibility:hidden}
+.native-seg #kindSeg{visibility:hidden}
 .native-glass .toast{top:calc(env(safe-area-inset-top,0px) + 62px)}
 
 /* 標題列：浮在內容上面，往下捲時內容從底下模糊地透出來 */
@@ -1399,14 +1400,18 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 
   /* iOS 26：返回、下一步、⋯、底部按鈕換成 iPhone 原生的 Liquid Glass（GlassBar，見 AppDelegate.swift）。
      原生按鈕疊在網頁上面，網頁自己的按鈕藏起來但位置留著；按原生按鈕等於按網頁的那顆。 */
-  var GLASS=null,glassKey='';
+  var GLASS=null,glassKey='',segReady=false;
+  $('s2').addEventListener('animationend',function(e){if(e.target===this&&current===2){segReady=true;syncGlass()}});
+  window.addEventListener('resize',function(){glassKey='';syncGlass()});
   try{
     if(window.Capacitor&&Capacitor.isNativePlatform()&&Capacitor.Plugins.GlassBar){
       GLASS=Capacitor.Plugins.GlassBar;
       document.body.classList.add('native-glass');
       GLASS.info().then(function(r){if(!r||!r.glass){GLASS=null;document.body.classList.remove('native-glass')}}).catch(function(){});
       GLASS.addListener('tap',function(e){
-        var b=$({back:'navBack',next:'navNext',primary:'primary',more:'moreBtn'}[e&&e.id]);
+        var id=e&&e.id;
+        if(id==='seg-in'||id==='seg-out'){$('kindSeg').querySelector('[data-v="'+id.slice(4)+'"]').click();return}
+        var b=$({back:'navBack',next:'navNext',primary:'primary',more:'moreBtn'}[id]);
         if(b&&!b.disabled)b.click();
       });
     }
@@ -1418,8 +1423,16 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       back:nav?{label:$('backLabel').textContent,chevron:$('backChev').style.display!=='none'}:null,
       next:nav&&!nx.hidden?{label:nx.textContent,enabled:!nx.disabled}:null,
       primary:$('dock').hidden?null:{label:current===1?'記帳':$('primary').textContent,plus:current===1},
-      more:current===1
+      more:current===1,
+      seg:null
     };
+    /* 收入｜支出：等換頁動畫跑完、位置固定了才量，原生那顆疊在網頁那顆的位置上 */
+    var ks=$('kindSeg');
+    if(current===2&&segReady&&!ks.hidden){
+      var r=ks.getBoundingClientRect();
+      st.seg={x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),value:flow.kind};
+    }
+    document.body.classList.toggle('native-seg',!!st.seg);
     var key=JSON.stringify(st);
     if(key===glassKey)return;
     glassKey=key;
@@ -1442,7 +1455,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('scroll').scrollTop=0;$('nav').classList.remove('lined');
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     if(n===1){delete document.body.dataset.kind;paintHome()}
-    else if(n===2)paintAmt();
+    else if(n===2){segReady=false;setTimeout(function(){if(current===2&&!segReady){segReady=true;syncGlass()}},450);paintAmt()}
     else if(n===3)paintBigs();
     else if(n===4)paintSubs();
     else if(n===5)paintDetail();
@@ -1479,6 +1492,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   function atEdge(x){return x<EDGE&&current>1}
   var drag=null,moving=[$('scroll'),$('dock')];
   function slide(x,anim){
+    if(GLASS&&current===2&&segReady===!!x){segReady=!x;syncGlass()}  /* 拖動時原生的收入｜支出先藏起來，不然不會跟著網頁移動 */
     moving.forEach(function(e){
       e.style.transition=anim?'transform .25s var(--ease),opacity .25s var(--ease)':'none';
       e.style.transform=x?'translateX('+x+'px)':'';
