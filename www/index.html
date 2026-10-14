@@ -67,6 +67,9 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 }
 .glass:active{transform:scale(1.06);filter:brightness(1.08) saturate(1.1)}
 .glass.tinted{background-color:var(--glass-tint);color:#FFFFFF}
+/* iOS 26 用原生的按鈕蓋在上面，網頁的藏起來（位置留著）；提示泡泡往下移，不要被原生按鈕擋住 */
+.native-glass #navBack,.native-glass #navNext,.native-glass #primary,.native-glass #moreBtn{visibility:hidden}
+.native-glass .toast{top:calc(env(safe-area-inset-top,0px) + 62px)}
 
 /* 標題列：浮在內容上面，往下捲時內容從底下模糊地透出來 */
 .nav{
@@ -1391,6 +1394,36 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       nx.textContent=flow.mode==='start'?'完成':flow.mode==='edit'?'儲存':'下一步';
       nx.disabled=flow.mode!=='start'&&!(parseInt(flow.amt,10)>0);
     }
+    syncGlass();
+  }
+
+  /* iOS 26：返回、下一步、⋯、底部按鈕換成 iPhone 原生的 Liquid Glass（GlassBar，見 AppDelegate.swift）。
+     原生按鈕疊在網頁上面，網頁自己的按鈕藏起來但位置留著；按原生按鈕等於按網頁的那顆。 */
+  var GLASS=null,glassKey='';
+  try{
+    if(window.Capacitor&&Capacitor.isNativePlatform()&&Capacitor.Plugins.GlassBar){
+      GLASS=Capacitor.Plugins.GlassBar;
+      document.body.classList.add('native-glass');
+      GLASS.info().then(function(r){if(!r||!r.glass){GLASS=null;document.body.classList.remove('native-glass')}}).catch(function(){});
+      GLASS.addListener('tap',function(e){
+        var b=$({back:'navBack',next:'navNext',primary:'primary',more:'moreBtn'}[e&&e.id]);
+        if(b&&!b.disabled)b.click();
+      });
+    }
+  }catch(e){GLASS=null}
+  function syncGlass(){
+    if(!GLASS)return;
+    var nav=!$('nav').hidden,nx=$('navNext');
+    var st={
+      back:nav?{label:$('backLabel').textContent,chevron:$('backChev').style.display!=='none'}:null,
+      next:nav&&!nx.hidden?{label:nx.textContent,enabled:!nx.disabled}:null,
+      primary:$('dock').hidden?null:{label:current===1?'記帳':$('primary').textContent,plus:current===1},
+      more:current===1
+    };
+    var key=JSON.stringify(st);
+    if(key===glassKey)return;
+    glassKey=key;
+    try{GLASS.set(st).catch(function(){})}catch(e){}
   }
   function paintNav(){
     $('nav').hidden=current===1;

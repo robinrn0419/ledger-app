@@ -48,6 +48,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(SharedBoxPlugin())
+        bridge?.registerPluginInstance(GlassBarPlugin())
     }
 }
 
@@ -123,5 +124,128 @@ public class SharedBoxPlugin: CAPPlugin, CAPBridgedPlugin {
             return call.resolve(["text": NSNull()])
         }
         call.resolve(["text": text])
+    }
+}
+
+/* GlassBar：iOS 26 真正的 Liquid Glass 按鈕，疊在網頁上面（網頁那邊是 Capacitor.Plugins.GlassBar）。
+   網頁用 set() 告訴它現在要哪些按鈕、上面寫什麼；按下時送 "tap" 事件回網頁，由網頁做原本的事。
+   iOS 26 以前 info() 回 glass:false，網頁就繼續用自己畫的玻璃。 */
+@objc(GlassBarPlugin)
+public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "GlassBarPlugin"
+    public let jsName = "GlassBar"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "info", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "set", returnType: CAPPluginReturnPromise)
+    ]
+
+    private var buttons: [String: UIButton] = [:]
+
+    @objc func info(_ call: CAPPluginCall) {
+        if #available(iOS 26.0, *) {
+            call.resolve(["glass": true])
+        } else {
+            call.resolve(["glass": false])
+        }
+    }
+
+    /* set({back:{label,chevron}|null, next:{label,enabled}|null, primary:{label,plus}|null, more:true/false}) */
+    @objc func set(_ call: CAPPluginCall) {
+        let back = call.getObject("back")
+        let next = call.getObject("next")
+        let primary = call.getObject("primary")
+        let more = call.getBool("more") ?? false
+        DispatchQueue.main.async {
+            if #available(iOS 26.0, *) {
+                self.buildIfNeeded()
+                self.update("back", show: back != nil, title: back?["label"] as? String,
+                            image: (back?["chevron"] as? Bool ?? true) ? "chevron.left" : nil, enabled: true)
+                self.update("next", show: next != nil, title: next?["label"] as? String,
+                            image: nil, enabled: next?["enabled"] as? Bool ?? true)
+                self.update("primary", show: primary != nil, title: primary?["label"] as? String,
+                            image: (primary?["plus"] as? Bool ?? false) ? "plus" : nil, enabled: true)
+                self.update("more", show: more, title: nil, image: "ellipsis", enabled: true)
+            }
+            call.resolve()
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private func buildIfNeeded() {
+        guard buttons.isEmpty, let root = bridge?.viewController?.view else { return }
+        let safe = root.safeAreaLayoutGuide
+        for id in ["back", "next", "more", "primary"] {
+            let b = UIButton(configuration: (id == "next" || id == "primary") ? .prominentGlass() : .glass())
+            b.translatesAutoresizingMaskIntoConstraints = false
+            b.alpha = 0
+            b.isHidden = true
+            b.addAction(UIAction { [weak self] _ in
+                self?.notifyListeners("tap", data: ["id": id])
+            }, for: .touchUpInside)
+            root.addSubview(b)
+            buttons[id] = b
+            switch id {
+            case "back":
+                NSLayoutConstraint.activate([
+                    b.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 12),
+                    b.topAnchor.constraint(equalTo: safe.topAnchor, constant: 6),
+                    b.heightAnchor.constraint(equalToConstant: 44)
+                ])
+            case "next":
+                NSLayoutConstraint.activate([
+                    b.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -12),
+                    b.topAnchor.constraint(equalTo: safe.topAnchor, constant: 6),
+                    b.heightAnchor.constraint(equalToConstant: 44)
+                ])
+            case "more":
+                NSLayoutConstraint.activate([
+                    b.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -16),
+                    b.topAnchor.constraint(equalTo: safe.topAnchor, constant: 10),
+                    b.widthAnchor.constraint(equalToConstant: 44),
+                    b.heightAnchor.constraint(equalToConstant: 44)
+                ])
+            default:
+                /* 鍵盤跳出來時跟著往上，收起來時停在安全區上面 */
+                NSLayoutConstraint.activate([
+                    b.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
+                    b.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -20),
+                    b.bottomAnchor.constraint(equalTo: root.keyboardLayoutGuide.topAnchor, constant: -14),
+                    b.heightAnchor.constraint(equalToConstant: 56)
+                ])
+            }
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private func update(_ id: String, show: Bool, title: String?, image: String?, enabled: Bool) {
+        guard let b = buttons[id] else { return }
+        if show {
+            var c: UIButton.Configuration = (id == "next" || id == "primary") ? .prominentGlass() : .glass()
+            c.cornerStyle = .capsule
+            let big = id == "primary"
+            let weight: UIFont.Weight = id == "back" ? .medium : .semibold
+            if let title = title, !title.isEmpty {
+                c.title = title
+                c.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { a in
+                    var a = a
+                    a.font = UIFont.systemFont(ofSize: big ? 18 : 17, weight: weight)
+                    return a
+                }
+            }
+            if let image = image {
+                c.image = UIImage(systemName: image, withConfiguration: UIImage.SymbolConfiguration(pointSize: big ? 17 : 16, weight: .semibold))
+                c.imagePadding = 6
+            }
+            c.contentInsets = id == "more" ? NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+                : NSDirectionalEdgeInsets(top: 0, leading: id == "back" ? 12 : 16, bottom: 0, trailing: 16)
+            b.configuration = c
+            b.isEnabled = enabled
+            b.isHidden = false
+            if b.alpha < 1 { UIView.animate(withDuration: 0.25) { b.alpha = 1 } }
+        } else if !b.isHidden {
+            UIView.animate(withDuration: 0.2, animations: { b.alpha = 0 }) { _ in
+                if b.alpha == 0 { b.isHidden = true }
+            }
+        }
     }
 }
