@@ -257,6 +257,15 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .act:active{background:var(--press)}
 .act.del{color:var(--red)}
 .list .kv{position:relative}
+/* 明細可以點的列：點了直接改那一項 */
+.kv-btn{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:12px 16px;font-size:16px;text-align:left;transition:background .15s}
+.kv-btn:active{background:var(--press)}
+#dRows li + li::before{left:16px}
+.kv-btn .k{color:var(--sec)}
+.kv-btn .v{flex:1;min-width:0;text-align:right;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv-btn .v.ph{color:var(--sec)}
+.kv-btn > svg{flex:none;width:8px;height:14px;color:var(--sec);opacity:.6}
+.kv-btn input[type="date"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;-webkit-appearance:none;appearance:none;border:0}
 
 /* 底部按鈕 */
 .dock{
@@ -515,7 +524,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     <section class="screen" id="s5">
       <div class="d-head" id="dHead"></div>
       <div class="group"><ul class="list" id="dRows"></ul></div>
-      <div class="group" id="editBox"><button type="button" class="act" id="editRec">修改</button></div>
+      <p class="foot" id="editFoot">點一列就可以直接改。</p>
       <div class="group" id="delBox"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
       <p class="foot" id="dFoot" hidden>這筆是從課堂薪水匯入的，要修改或刪除請到課堂薪水，記一筆會跟著改。</p>
     </section>
@@ -1086,11 +1095,16 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   $('setupBtn').addEventListener('click',function(){startFlow('start')});
 
   /* ---------- 輸入金額 ---------- */
-  function startFlow(mode,rec){
-    flow={mode:mode,kind:rec?rec.kind:'in',amt:'',big:null,rec:rec||null,note:rec&&rec.src!=='classpay'?rec.note||'':''};
-    if(mode==='edit')flow.amt=String(rec.amt);
+  /* mode：new 記新的、start 起始金額、edit 修改（only＝明細頁點的那一項：amt／kind／cat／note） */
+  function startFlow(mode,rec,only){
+    flow={mode:mode,kind:rec?rec.kind:'in',amt:'',big:null,rec:rec||null,note:rec&&rec.src!=='classpay'?rec.note||'':'',only:only||null};
     if(mode==='start'&&db.start)flow.amt=String(db.start);
-    buzz.tap();show(2);
+    buzz.tap();
+    if(mode!=='edit'){show(2);return}
+    var b=bigById(rec.cat),s1=findSub(b.subs,rec.sub);
+    flow.amt=String(rec.amt);flow.big=b;flow.pick={sub:s1,sub2:s1&&findSub(s1.subs,rec.sub2)};
+    if(only==='kind')flow.kind=rec.kind==='in'?'out':'in';  /* 換收支一定要重選類別 */
+    show(only==='amt'?2:only==='note'?8:3);
   }
   function paintAmt(){
     var n=parseInt(flow.amt,10)||0;
@@ -1100,7 +1114,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var st=flow.mode==='start';
     $('amtKind').textContent=st?'目前有多少錢':flow.kind==='in'?'收入':'支出';
     $('amtNote').textContent=st?'存款加現金的總數，之後隨時可以改。':flow.mode==='edit'?'修改：'+dayText(flow.rec.date)+'的紀錄':'';
-    $('kindSeg').hidden=st;
+    $('kindSeg').hidden=st||flow.mode==='edit';  /* 修改金額時不能換收支（要從明細的「類型」改） */
     $('kindSeg').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===flow.kind))});
     paintDock();
   }
@@ -1146,6 +1160,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       var a=$('amtBox');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
       buzz.note('WARNING');return;
     }
+    if(flow.mode==='edit'){finish();return}
     buzz.tap('MEDIUM');show(3);
   }
 
@@ -1210,7 +1225,11 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       li.appendChild(lb);ul.appendChild(li);
     });
   }
-  function toNote(sub,sub2){buzz.tap();flow.pick={sub:sub,sub2:sub2};show(8)}
+  function toNote(sub,sub2){
+    flow.pick={sub:sub,sub2:sub2};
+    if(flow.mode==='edit'){finish();return}  /* 修改類別：選好就存 */
+    buzz.tap();show(8);
+  }
 
   /* ---------- 備註 ---------- */
   /* 最近寫過的備註：同一句只出現一次，新的在前；課堂薪水匯入的是摘要，不算 */
@@ -1255,7 +1274,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       var r=flow.rec,before=clone(r);
       r.kind=flow.kind;r.amt=amt;r.cat=big.id;r.sub=sub?sub.id:null;r.sub2=sub2?sub2.id:null;r.note=note;r.upd=now;
       if(!save()){Object.assign(r,before);return}
-      buzz.note('SUCCESS');freshId=r.id;show(1,true);toast('已修改 '+label);
+      buzz.note('SUCCESS');detail=r;show(5,true);
+      toast('已修改 '+label,function(){Object.assign(r,before);save();if(current===5)paintDetail()});
       return;
     }
     var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:note,proj:null,src:'manual',ref:null,at:now,upd:now};
@@ -1275,18 +1295,40 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     h.appendChild(el('b',null,n.full));
     h.appendChild(el('span','amt-'+r.kind,signed(r)+' 元'));
     var ul=$('dRows');ul.textContent='';
-    var rows=[['類型',r.kind==='in'?'收入':'支出'],['大類',n.big],['小類',n.sub||'—']];
-    if(n.sub2)rows.push(['細項',n.sub2]);
-    rows.push(['日期',dayText(r.date,true)]);
     var cp=r.src==='classpay';
+    /* 第三欄是點了要改哪一項（課堂薪水匯入的不能改） */
+    var rows=[['金額',fmt(r.amt)+' 元','amt'],['類型',r.kind==='in'?'收入':'支出','kind'],['大類',n.big,'cat'],['小類',n.sub||'—','cat']];
+    if(n.sub2)rows.push(['細項',n.sub2,'cat']);
+    if(!cp)rows.push(['備註',r.note||'','note']);
+    rows.push(['日期',dayText(r.date,true),'date']);
     if(cp){rows.push(['來源','課堂薪水']);if(r.note)rows.push(['內容',r.note])}
-    else if(r.note)rows.push(['備註',r.note]);
-    $('editBox').hidden=$('delBox').hidden=cp;$('dFoot').hidden=!cp;
+    $('editFoot').hidden=$('delBox').hidden=cp;$('dFoot').hidden=!cp;
     rows.forEach(function(x){
-      var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+      var li=el('li');
+      if(cp||!x[2]){
+        var d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
+        return;
+      }
+      var b=el('button','kv-btn');b.type='button';
+      b.appendChild(el('span','k',x[0]));
+      b.appendChild(el('span','v'+(x[1]?'':' ph'),x[1]||'新增備註'));
+      b.insertAdjacentHTML('beforeend',CHEV);
+      if(x[2]==='date'){
+        /* 透明的日期欄蓋在整列上，點了跳出系統的選日期 */
+        var di=document.createElement('input');di.type='date';di.value=r.date;di.max=today();di.setAttribute('aria-label','日期');
+        di.addEventListener('change',function(){if(di.value&&di.value!==r.date)setDate(r,di.value)});
+        b.appendChild(di);
+      }else b.addEventListener('click',function(){startFlow('edit',r,x[2])});
+      li.appendChild(b);ul.appendChild(li);
     });
   }
-  $('editRec').addEventListener('click',function(){startFlow('edit',detail)});
+  function setDate(r,v){
+    var before=r.date;
+    r.date=v;r.upd=Date.now();
+    if(!save()){r.date=before;return}
+    buzz.note('SUCCESS');paintDetail();
+    toast('日期改成 '+dayText(v,true),function(){r.date=before;save();if(current===5)paintDetail()});
+  }
   $('delRec').addEventListener('click',function(){
     var r=detail,i=db.recs.indexOf(r);if(i<0)return;
     db.recs.splice(i,1);
@@ -1302,13 +1344,13 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   function paintDock(){
     var p=$('primary');
     $('dock').hidden=current!==1&&current!==8;
-    if(current===8)p.textContent='存好';
+    if(current===8)p.textContent=flow.mode==='edit'?'儲存':'存好';
     if(current===1)p.innerHTML='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3v14 M3 10h14"/></svg>記帳';
     /* 輸入金額頁的「下一步」在右上角 */
     var nx=$('navNext');
     nx.hidden=current!==2;
     if(current===2){
-      nx.textContent=flow.mode==='start'?'完成':'下一步';
+      nx.textContent=flow.mode==='start'?'完成':flow.mode==='edit'?'儲存':'下一步';
       nx.disabled=flow.mode!=='start'&&!(parseInt(flow.amt,10)>0);
     }
   }
@@ -1317,8 +1359,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     var cancel=current===2;
     $('backChev').style.display=cancel?'none':'';
     var pk=flow.pick||{};
-    $('backLabel').textContent=cancel?'取消':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':current===8?'備註':'明細';
+    var ed=flow.mode==='edit';
+    $('backLabel').textContent=cancel?'取消':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':current===8?'備註':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -1343,8 +1386,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   function goBack(){
     buzz.tap();
     if(current===2)show(flow.mode==='edit'?5:1,true);
-    else if(current===3)show(2,true);
+    else if(current===3)show(flow.mode==='edit'?5:2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
+    else if(current===8&&flow.mode==='edit')show(5,true);
     else if(current===8){var p=flow.pick;if(p.sub2){flow.sub=p.sub;show(4,true)}else if(p.sub){flow.sub=null;show(4,true)}else show(3,true)}
     else if(current>=5&&current!==8)show(1,true);
   }
