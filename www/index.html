@@ -192,6 +192,16 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .pick-sum{display:flex;align-items:baseline;justify-content:space-between;margin:8px 4px 0;font-size:15px;color:var(--sec)}
 .pick-sum b{font-family:var(--round);font-size:22px;font-weight:700;color:var(--label);font-variant-numeric:tabular-nums}
 .pick-sum b.in{color:var(--in)}
+/* 備註頁：輸入框在上，最近用過的排在下半部 */
+#s8.on{display:flex;flex-direction:column;min-height:100%}
+.note-box input{display:block;width:100%;height:52px;padding:0 16px;border:0;border-radius:0;background:transparent;color:var(--label);font:inherit;font-size:17px;outline:none;-webkit-appearance:none;appearance:none}
+.note-box input::placeholder{color:var(--sec)}
+#s8 .head{margin-left:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{max-width:100%;height:38px;padding:0 16px;border-radius:19px;background:var(--card);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .2s var(--ease),color .2s,transform .15s var(--ease)}
+.chip:active{transform:scale(.96)}
+.chip.sel{background:var(--tint);color:#FFFFFF}
+.rec-note{display:block;margin-top:1px;font-size:13px;color:var(--sec);overflow:hidden;text-overflow:ellipsis}
 /* 大類方塊：和課堂薪水主頁一樣的彩色大方塊 */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
 .tile{
@@ -490,14 +500,22 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       <div class="grow"></div>
       <div class="strips" id="strips"></div>
       <div class="group" id="subsBox"><ul class="list subs" id="subs"></ul></div>
-      <p class="foot">點一下就記好。</p>
+    </section>
+
+    <!-- 8 備註：選完類別後寫一句，可以點最近用過的 -->
+    <section class="screen" id="s8">
+      <div class="pick-sum"><span id="sum8"></span><b id="amt8"></b></div>
+      <div class="group note-box"><input type="text" id="noteIn" placeholder="備註（可不填）" maxlength="60" enterkeyhint="done" autocomplete="off" autocorrect="off"></div>
+      <div class="grow"></div>
+      <div class="head" id="recentHead">最近的備註</div>
+      <div class="chips" id="recent"></div>
     </section>
 
     <!-- 5 明細 -->
     <section class="screen" id="s5">
       <div class="d-head" id="dHead"></div>
       <div class="group"><ul class="list" id="dRows"></ul></div>
-      <div class="group" id="editBox"><button type="button" class="act" id="editRec">修改金額或類別</button></div>
+      <div class="group" id="editBox"><button type="button" class="act" id="editRec">修改</button></div>
       <div class="group" id="delBox"><button type="button" class="act del" id="delRec">刪除這筆</button></div>
       <p class="foot" id="dFoot" hidden>這筆是從課堂薪水匯入的，要修改或刪除請到課堂薪水，記一筆會跟著改。</p>
     </section>
@@ -879,6 +897,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       b.appendChild(ico(big));
       var main=el('span','rec-main',n.big);
       if(n.rest)main.appendChild(el('span',null,'・'+n.rest));
+      if(r.note&&r.src!=='classpay')main.appendChild(el('small','rec-note',r.note));
       b.appendChild(main);
       b.appendChild(el('span','amt-'+r.kind,signed(r)));
       b.addEventListener('click',function(){buzz.tap();detail=r;show(5)});
@@ -1068,7 +1087,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 
   /* ---------- 輸入金額 ---------- */
   function startFlow(mode,rec){
-    flow={mode:mode,kind:rec?rec.kind:'in',amt:'',big:null,rec:rec||null};
+    flow={mode:mode,kind:rec?rec.kind:'in',amt:'',big:null,rec:rec||null,note:rec&&rec.src!=='classpay'?rec.note||'':''};
     if(mode==='edit')flow.amt=String(rec.amt);
     if(mode==='start'&&db.start)flow.amt=String(db.start);
     buzz.tap();show(2);
@@ -1152,7 +1171,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       t.appendChild(txt);
       t.addEventListener('click',function(){
         buzz.tap();flow.big=c;flow.sub=null;
-        if(!c.subs.length){finish(null,null);return}  /* 沒有小類就直接記 */
+        if(!c.subs.length){toNote(null,null);return}  /* 沒有小類就直接寫備註 */
         show(4);
       });
       box.appendChild(t);
@@ -1171,7 +1190,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       var cur=r&&(third?r.sub===flow.sub.id&&r.sub2===s.id:r.sub===s.id);
       function pick(){
         if(deeper){buzz.tap();flow.sub=s;show(4);return}
-        if(third)finish(flow.sub,s);else finish(s,null);
+        if(third)toNote(flow.sub,s);else toNote(s,null);
       }
       if(!third){
         var b=el('button','strip'+(cur?' sel':''));b.type='button';
@@ -1191,17 +1210,55 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       li.appendChild(lb);ul.appendChild(li);
     });
   }
-  function finish(sub,sub2){
+  function toNote(sub,sub2){buzz.tap();flow.pick={sub:sub,sub2:sub2};show(8)}
+
+  /* ---------- 備註 ---------- */
+  /* 最近寫過的備註：同一句只出現一次，新的在前；課堂薪水匯入的是摘要，不算 */
+  function recentNotes(){
+    var seen={},out=[];
+    db.recs.filter(function(r){return r.src!=='classpay'&&r.note&&r.note.trim()})
+      .sort(function(a,b){return (b.upd||b.at)-(a.upd||a.at)})
+      .forEach(function(r){var t=r.note.trim();if(!seen[t]&&out.length<12){seen[t]=1;out.push(t)}});
+    return out;
+  }
+  function paintNote(){
+    pickSum(8);
+    var p=flow.pick;
+    $('sum8').textContent=[flow.big.name,p.sub&&p.sub.name,p.sub2&&p.sub2.name].filter(Boolean).join('・');
+    var inp=$('noteIn');inp.value=flow.note;
+    var box=$('recent');box.textContent='';
+    var list=recentNotes();
+    $('recentHead').hidden=!list.length;
+    list.forEach(function(t){
+      var b=el('button','chip',t);b.type='button';
+      b.addEventListener('click',function(){
+        buzz.tap();
+        flow.note=inp.value.trim()===t?'':t;  /* 再點一次同一個就清掉 */
+        inp.value=flow.note;markChips();
+      });
+      box.appendChild(b);
+    });
+    markChips();
+  }
+  function markChips(){
+    var v=$('noteIn').value.trim();
+    $('recent').querySelectorAll('.chip').forEach(function(b){b.classList.toggle('sel',b.textContent===v)});
+  }
+  $('noteIn').addEventListener('input',function(){flow.note=this.value;markChips()});
+  $('noteIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();this.blur();finish()}});
+
+  function finish(){
+    var sub=flow.pick.sub,sub2=flow.pick.sub2,note=(flow.note||'').trim();
     var amt=parseInt(flow.amt,10)||0,big=flow.big,now=Date.now();
     var label=[big.name,sub&&sub.name,sub2&&sub2.name].filter(Boolean).join('・')+' '+(flow.kind==='in'?'+':'−')+fmt(amt)+' 元';
     if(flow.mode==='edit'){
       var r=flow.rec,before=clone(r);
-      r.kind=flow.kind;r.amt=amt;r.cat=big.id;r.sub=sub?sub.id:null;r.sub2=sub2?sub2.id:null;r.upd=now;
+      r.kind=flow.kind;r.amt=amt;r.cat=big.id;r.sub=sub?sub.id:null;r.sub2=sub2?sub2.id:null;r.note=note;r.upd=now;
       if(!save()){Object.assign(r,before);return}
       buzz.note('SUCCESS');freshId=r.id;show(1,true);toast('已修改 '+label);
       return;
     }
-    var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:'',proj:null,src:'manual',ref:null,at:now,upd:now};
+    var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:note,proj:null,src:'manual',ref:null,at:now,upd:now};
     db.recs.push(rec);
     if(!save()){db.recs.pop();return}
     buzz.note('SUCCESS');freshId=rec.id;petReact(rec);show(1,true);
@@ -1223,6 +1280,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     rows.push(['日期',dayText(r.date,true)]);
     var cp=r.src==='classpay';
     if(cp){rows.push(['來源','課堂薪水']);if(r.note)rows.push(['內容',r.note])}
+    else if(r.note)rows.push(['備註',r.note]);
     $('editBox').hidden=$('delBox').hidden=cp;$('dFoot').hidden=!cp;
     rows.forEach(function(x){
       var li=el('li'),d=el('div','kv');d.appendChild(el('span',null,x[0]));d.appendChild(el('span',null,x[1]));li.appendChild(d);ul.appendChild(li);
@@ -1243,7 +1301,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   /* ---------- 換頁、標題列、底部按鈕 ---------- */
   function paintDock(){
     var p=$('primary');
-    $('dock').hidden=current!==1;
+    $('dock').hidden=current!==1&&current!==8;
+    if(current===8)p.textContent='存好';
     if(current===1)p.innerHTML='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3v14 M3 10h14"/></svg>記帳';
     /* 輸入金額頁的「下一步」在右上角 */
     var nx=$('navNext');
@@ -1257,8 +1316,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('nav').hidden=current===1;
     var cancel=current===2;
     $('backChev').style.display=cancel?'none':'';
-    $('backLabel').textContent=cancel?'取消':current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':'明細';
+    var pk=flow.pick||{};
+    $('backLabel').textContent=cancel?'取消':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改':'記帳'):current===3?'選擇類別':current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':current===8?'備註':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -1273,18 +1333,20 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     else if(n===4)paintSubs();
     else if(n===5)paintDetail();
     else if(n===6)paintData();
+    else if(n===8)paintNote();
     else paintStats();
     paintNav();paintDock();
   }
   $('scroll').addEventListener('scroll',function(){$('nav').classList.toggle('lined',this.scrollTop>2)},{passive:true});
-  $('primary').addEventListener('click',function(){startFlow('new')});
+  $('primary').addEventListener('click',function(){if(current===8)finish();else startFlow('new')});
   $('navNext').addEventListener('click',next);
   function goBack(){
     buzz.tap();
     if(current===2)show(flow.mode==='edit'?5:1,true);
     else if(current===3)show(2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
-    else if(current>=5)show(1,true);
+    else if(current===8){var p=flow.pick;if(p.sub2){flow.sub=p.sub;show(4,true)}else if(p.sub){flow.sub=null;show(4,true)}else show(3,true)}
+    else if(current>=5&&current!==8)show(1,true);
   }
   $('navBack').addEventListener('click',goBack);
 
