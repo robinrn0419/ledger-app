@@ -34,6 +34,13 @@ jobs:
       - name: 安裝套件
         run: npm ci
 
+      - name: 決定版本號
+        id: ver
+        run: echo "version=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: 把版本號寫進畫面（資料與備份頁最下面）
+        run: sed -i '' "s/__APP_VER__/${{ steps.ver.outputs.version }}/" www/index.html
+
       - name: 把 www/ 同步進 iOS 專案
         run: npx cap sync ios
 
@@ -46,10 +53,6 @@ jobs:
         run: |
           gem install xcodeproj --no-document
           ruby scripts/add-widget.rb
-
-      - name: 決定版本號
-        id: ver
-        run: echo "version=1.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
       - name: 編譯（不簽名，SideStore 安裝時會自己簽）
         run: |
@@ -124,6 +127,7 @@ jobs:
           BUILD: ${{ github.run_number }}
           SIZE: ${{ needs.ios.outputs.size }}
         run: |
+          sed -i "s/__APP_VER__/$VERSION/" www/index.html
           node scripts/make-web.js site
           node scripts/make-source.js > site/source.json
           cat site/source.json
