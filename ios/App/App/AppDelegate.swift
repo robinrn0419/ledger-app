@@ -143,10 +143,11 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
     private var seg: UISegmentedControl?
 
     @objc func info(_ call: CAPPluginCall) {
+        let os = UIDevice.current.systemVersion
         if #available(iOS 26.0, *) {
-            call.resolve(["glass": true])
+            call.resolve(["glass": true, "os": os])
         } else {
-            call.resolve(["glass": false])
+            call.resolve(["glass": false, "os": os])
         }
     }
 

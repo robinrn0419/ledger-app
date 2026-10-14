@@ -590,7 +590,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       <div class="head" id="cpHead" hidden>課堂薪水</div>
       <div class="group" id="cpBox" hidden><ul class="list" id="cpInfo"></ul></div>
       <p class="foot" id="cpFoot" hidden></p>
-      <p class="foot ver" id="appVer">記一筆 v__APP_VER__</p>
+      <p class="foot ver" id="appVer">記一筆 v__APP_VER__<br><span id="glassInfo"></span></p>
     </section>
 
     <!-- 7 統計 -->
@@ -1400,14 +1400,18 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 
   /* iOS 26：返回、下一步、⋯、底部按鈕換成 iPhone 原生的 Liquid Glass（GlassBar，見 AppDelegate.swift）。
      原生按鈕疊在網頁上面，網頁自己的按鈕藏起來但位置留著；按原生按鈕等於按網頁的那顆。 */
-  var GLASS=null,glassKey='',segReady=false;
+  var GLASS=null,glassKey='',segReady=false,glassNote='原生玻璃：網頁版沒有';
   $('s2').addEventListener('animationend',function(e){if(e.target===this&&current===2){segReady=true;syncGlass()}});
   window.addEventListener('resize',function(){glassKey='';syncGlass()});
   try{
     if(window.Capacitor&&Capacitor.isNativePlatform()&&Capacitor.Plugins.GlassBar){
       GLASS=Capacitor.Plugins.GlassBar;
       document.body.classList.add('native-glass');
-      GLASS.info().then(function(r){if(!r||!r.glass){GLASS=null;document.body.classList.remove('native-glass')}}).catch(function(){});
+      glassNote='原生玻璃：檢查中';
+      GLASS.info().then(function(r){
+        glassNote='iOS '+(r&&r.os||'?')+'・原生玻璃：'+(r&&r.glass?'開啟':'這個 iOS 不支援');
+        if(!r||!r.glass){GLASS=null;document.body.classList.remove('native-glass')}
+      }).catch(function(e){glassNote='原生玻璃：失敗（'+(e&&e.message||e)+'）';GLASS=null;document.body.classList.remove('native-glass')});
       GLASS.addListener('tap',function(e){
         var id=e&&e.id;
         if(id==='seg-in'||id==='seg-out'){$('kindSeg').querySelector('[data-v="'+id.slice(4)+'"]').click();return}
@@ -1415,7 +1419,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
         if(b&&!b.disabled)b.click();
       });
     }
-  }catch(e){GLASS=null}
+  }catch(e){GLASS=null;glassNote='原生玻璃：失敗（'+e.message+'）'}
+  if(!GLASS&&window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()&&glassNote.indexOf('失敗')<0)glassNote='原生玻璃：App 裡找不到 GlassBar';
   function syncGlass(){
     if(!GLASS)return;
     var nav=!$('nav').hidden,nx=$('navNext');
@@ -1882,6 +1887,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
   }
 
   function paintData(){
+    $('glassInfo').textContent=glassNote;
     var last=+(function(){try{return localStorage.getItem(BK_TIME)}catch(e){return 0}})()||0;
     var rows=[['紀錄',db.recs.length+' 筆']];
     rows.push(['最近一次自動備份',!FS?'只有 App 版有':bkErr?'失敗：'+bkErr:last?agoText(last):'還沒有']);
