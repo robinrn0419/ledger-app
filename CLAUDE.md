@@ -133,7 +133,8 @@
 - **互動（2026-10-21 使用者要的：戳一下、摸摸、拖著跑，而且「錢太少摸牠會生氣」）**：`#pet` 用 pointer 事件（`touch-action:none`），互動也走 `pet.react`（`petSet(react,ms)`，`PET_ACT` 對應眼睛和小東西）。「錢太少」`petPoor()`＝那句話是紅的（bad）或總額是負的。
   - 戳（沒移動就放開）：平常 `boing` 跳一下＋LIGHT 震動；那句話是橘的或睡覺時間 `huff` 不耐煩搖頭；錢太少或 3 秒內戳 5 下 `mad`（倒八字眉、紅色生氣記號、冒煙、「哼!」、快速發抖）＋WARNING 震動。
   - 摸（手指移動超過 8px）：平常 `purr` 瞇眼左右蹭、飄愛心，每次換方向輕震；橘的 `meh` 嘆氣沒心情；錢太少 `mad`。放開後再維持 0.7 秒。
-  - 拖（按住 0.32 秒沒移動）：MEDIUM 震動抓起來，`held` 吊著晃、腳亂踢、眼睛睜大（錢太少 `heldmad` 晃很快、生氣），`#pet` 跟著手指 translate；放開用 `--spring` 彈回，落地震一下（一萬以上 HEAVY）＋`boing`（錢太少 `mad`）。
+  - 拖（按住 0.2 秒沒移動）：MEDIUM 震動抓起來，`held` 吊著晃、腳亂踢、眼睛睜大（錢太少 `heldmad` 晃很快、生氣），`#pet` 跟著手指 translate；放開用 `--spring` 彈回，落地震一下（一萬以上 HEAVY）＋`boing`（錢太少 `mad`）。
+  - 使用者說「不絲滑」（摸／戳、按住太久）→ v1.0.28：按住改 0.2 秒、移動超過 10px 才算摸；一次性動作（boing、huff…）`o.n=pet.seq` 讓連戳每一下都重播；會重複的動作（`PET_LOOP`：purr、meh、mad、held、heldmad，連瘦身材的 sway）keyframes 頭尾都是原樣，`petClear()` 等 `animationiteration`（最多 1.1 秒）才換回平常，不會從半路跳回去。
 
 **桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**
 - `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
