@@ -479,6 +479,26 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 #s7 .foot{margin-left:4px;margin-right:4px}
 .foot.ver{text-align:center;margin-top:32px;margin-bottom:24px;letter-spacing:.02em}
 
+/* ---------- 沒有原生玻璃（iOS 26 以前、網頁版）：不用玻璃，改回一般的 iPhone 樣子 ---------- */
+body:not(.native-glass) .glass{background:none;background-image:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;filter:none;transform:none}
+body:not(.native-glass) .nav::before{opacity:0;background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;-webkit-mask-image:none;mask-image:none;inset:0;border-bottom:.5px solid var(--sep)}
+body:not(.native-glass) .nav.lined::before{opacity:1}
+body:not(.native-glass) .nav-btn{color:var(--tint);padding:0 8px;transition:opacity .15s}
+body:not(.native-glass) .nav-btn:active{opacity:.4}
+body:not(.native-glass) .nav-btn:disabled{color:var(--sec);opacity:.5}
+body:not(.native-glass) .dock{padding-top:10px}
+body:not(.native-glass) .dock::before{background:var(--bg);-webkit-backdrop-filter:none;backdrop-filter:none;-webkit-mask-image:none;mask-image:none;border-top:.5px solid var(--sep)}
+body:not(.native-glass) .primary{height:52px;border-radius:14px;background:var(--tint);color:var(--on-tint);font-size:17px;letter-spacing:0;transition:transform .2s var(--ease),opacity .2s}
+body:not(.native-glass) .primary:active{transform:scale(.975);opacity:.85}
+body:not(.native-glass) .primary:disabled{background:var(--fill);color:var(--sec);transform:none;opacity:1}
+body:not(.native-glass) .more{background:var(--fill);color:var(--tint);width:36px;height:36px;top:16px;transition:opacity .15s}
+body:not(.native-glass) .more:active{opacity:.5}
+body:not(.native-glass) .toast{background:var(--card);background-image:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 8px 28px rgba(0,0,0,.16),0 0 0 .5px var(--sep);border-radius:24px}
+body:not(.native-glass) .seg{border-radius:9px;padding:2px;box-shadow:none}
+body:not(.native-glass) .seg button{height:36px;border-radius:7px}
+body:not(.native-glass) .seg button:active{transform:none}
+body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);background-image:none;box-shadow:0 3px 8px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.04)}
+
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
