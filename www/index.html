@@ -1400,8 +1400,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 
   /* iOS 26：返回、下一步、⋯、底部按鈕換成 iPhone 原生的 Liquid Glass（GlassBar，見 AppDelegate.swift）。
      原生按鈕疊在網頁上面，網頁自己的按鈕藏起來但位置留著；按原生按鈕等於按網頁的那顆。 */
-  var GLASS=null,glassKey='',segReady=false,glassNote='原生玻璃：網頁版沒有';
-  $('s2').addEventListener('animationend',function(e){if(e.target===this&&current===2){segReady=true;syncGlass()}});
+  var GLASS=null,glassKey='',segReady=true,glassNote='原生玻璃：網頁版沒有';
   window.addEventListener('resize',function(){glassKey='';syncGlass()});
   try{
     if(window.Capacitor&&Capacitor.isNativePlatform()&&Capacitor.Plugins.GlassBar){
@@ -1431,11 +1430,13 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
       more:current===1,
       seg:null
     };
-    /* 收入｜支出：等換頁動畫跑完、位置固定了才量，原生那顆疊在網頁那顆的位置上 */
+    /* 收入｜支出：原生那顆疊在網頁那顆的最後位置上。換頁動畫還在跑時，扣掉動畫的位移，
+       一進頁面就放真的，不會先閃一下網頁畫的 */
     var ks=$('kindSeg');
     if(current===2&&segReady&&!ks.hidden){
-      var r=ks.getBoundingClientRect();
-      st.seg={x:Math.round(r.left),y:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height),value:flow.kind};
+      var r=ks.getBoundingClientRect(),tf=getComputedStyle($('s2')).transform,dx=0,dy=0;
+      if(tf&&tf!=='none'){try{var m=new DOMMatrix(tf);dx=m.m41;dy=m.m42}catch(e){}}
+      st.seg={x:Math.round(r.left-dx),y:Math.round(r.top-dy),w:Math.round(r.width),h:Math.round(r.height),value:flow.kind};
     }
     document.body.classList.toggle('native-seg',!!st.seg);
     var key=JSON.stringify(st);
@@ -1460,7 +1461,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
     $('scroll').scrollTop=0;$('nav').classList.remove('lined');
     if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
     if(n===1){delete document.body.dataset.kind;paintHome()}
-    else if(n===2){segReady=false;setTimeout(function(){if(current===2&&!segReady){segReady=true;syncGlass()}},450);paintAmt()}
+    else if(n===2){segReady=true;paintAmt()}
     else if(n===3)paintBigs();
     else if(n===4)paintSubs();
     else if(n===5)paintDetail();
