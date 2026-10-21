@@ -130,6 +130,10 @@
 - 剛記完新的一筆（`petReact`，只有新增，不含修改和課堂薪水匯入）：和同一種（收入／支出）其他紀錄的平均比，<1 倍點頭、1–3 倍小跳、≥3 倍支出嚇一大跳／收入開心大跳＋450ms 後 HEAVY 震動；跑一次後回到平常樣子。睡覺時間記帳會被吵醒。
 - 樣子沒變就不重畫（`pet.key`），動畫才不會每次 paintHome 都從頭開始。
 - 只在 App 主頁，桌面小工具沒有寵物。
+- **互動（2026-10-21 使用者要的：戳一下、摸摸、拖著跑，而且「錢太少摸牠會生氣」）**：`#pet` 用 pointer 事件（`touch-action:none`），互動也走 `pet.react`（`petSet(react,ms)`，`PET_ACT` 對應眼睛和小東西）。「錢太少」`petPoor()`＝那句話是紅的（bad）或總額是負的。
+  - 戳（沒移動就放開）：平常 `boing` 跳一下＋LIGHT 震動；那句話是橘的或睡覺時間 `huff` 不耐煩搖頭；錢太少或 3 秒內戳 5 下 `mad`（倒八字眉、紅色生氣記號、冒煙、「哼!」、快速發抖）＋WARNING 震動。
+  - 摸（手指移動超過 8px）：平常 `purr` 瞇眼左右蹭、飄愛心，每次換方向輕震；橘的 `meh` 嘆氣沒心情；錢太少 `mad`。放開後再維持 0.7 秒。
+  - 拖（按住 0.32 秒沒移動）：MEDIUM 震動抓起來，`held` 吊著晃、腳亂踢、眼睛睜大（錢太少 `heldmad` 晃很快、生氣），`#pet` 跟著手指 translate；放開用 `--spring` 彈回，落地震一下（一萬以上 HEAVY）＋`boing`（錢太少 `mad`）。
 
 **桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**
 - `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
