@@ -2040,11 +2040,46 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     undoFn=undo||null;
     $('toastUndo').hidden=!undo;
     $('toast').classList.toggle('has-undo',!!undo);
+    $('toast').style.transform='';
     $('toast').classList.add('on');
     clearTimeout(toastT);toastT=setTimeout(hideToast,undo?4500:2500);
   }
   function hideToast(){$('toast').classList.remove('on');undoFn=null}
   $('toastUndo').addEventListener('click',function(){var f=undoFn;hideToast();if(f){buzz.tap();f()}});
+
+  /* 提示泡泡可以往上滑掉：跟著手指走，往上超過 24px 或滑得快就收起來，不然彈回原位 */
+  (function(){
+    var t=$('toast'),sw=null;
+    t.addEventListener('touchstart',function(e){
+      if(!t.classList.contains('on')||e.touches.length!==1)return;
+      sw={y0:e.touches[0].clientY,dy:0,t0:e.timeStamp};
+      clearTimeout(toastT);
+      t.style.transition='none';
+    },{passive:true});
+    t.addEventListener('touchmove',function(e){
+      if(!sw)return;
+      var dy=e.touches[0].clientY-sw.y0;
+      sw.dy=dy<0?dy:dy/4;  /* 往下拉有阻力 */
+      t.style.transform='translate(-50%,'+sw.dy+'px)';
+      e.preventDefault();
+    },{passive:false});
+    function end(e){
+      if(!sw)return;
+      var d=sw;sw=null;
+      var fast=d.dy<-8&&e.timeStamp-d.t0<250;
+      t.style.transition='';
+      if(d.dy<-24||fast){
+        t.style.transform='translate(-50%,-120%)';
+        t.classList.remove('on');undoFn=null;
+        setTimeout(function(){t.style.transform=''},400);
+      }else{
+        t.style.transform='';
+        toastT=setTimeout(hideToast,2500);
+      }
+    }
+    t.addEventListener('touchend',end);
+    t.addEventListener('touchcancel',end);
+  })();
 
   /* 從背景回來時，「今天」和「本月」可能已經換了 */
   document.addEventListener('visibilitychange',function(){
