@@ -688,7 +688,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* ---------- 資料 ---------- */
   /* 全部資料存成一包：{v:版本, start:起始金額, cats:類別, recs:紀錄}。改結構時看 v 決定怎麼搬。 */
   var KEY='ledger-data';
-  var VERSION=10;
+  var VERSION=11;
   /* 類別：大類（有圖示和顏色）底下有小類（有圖示），小類底下可以再分一層。
      薪資 → 教學 → 比賽班…；薪資 → 接案 → code/model/pcb（和課堂薪水的內容 id 一樣，之後匯入對得上）。 */
   var DEFAULT_CATS=[
@@ -715,7 +715,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       ['model','模型','model',[['kit','模型本體','model'],['paint','工具塗料','brush']]],
       ['other','其他','dots']]},
     {id:'subs',kind:'out',name:'訂閱',icon:'repeat',color:'#FF2D55',subs:[['software','軟體工具','app'],['media','影音娛樂','play'],['cloud','雲端空間','cloud']]},
-    {id:'out-other',kind:'out',name:'其他',icon:'dots',color:'#8E8E93',subs:[['study','學習進修','book'],['gift','送禮','gift'],['fee','手續費','receipt'],['misc','雜項','dots']]},
+    {id:'out-other',kind:'out',name:'其他',icon:'dots',color:'#8E8E93',subs:[['study','學習進修','book'],['gift','送禮','gift'],['fee','手續費','receipt'],['saving','存錢','piggy'],['misc','雜項','dots']]},
     {id:'salary',kind:'in',name:'薪資',icon:'cash',color:'#34C759',subs:[
       ['teach','教學','teach',[['contest','比賽班','trophy'],['advanced','進階班','chart'],['regular','普通班','book'],['other','其他','dots']]],
       ['gig','接案','briefcase',[['code','寫程式','code'],['model','3D 建模','model'],['pcb','畫 PCB','pcb']]],
@@ -801,7 +801,11 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     }
     /* v9 → v10：「教課接案」改名「零件及工具」（紀錄不用動） */
     if(d&&d.v===9&&Array.isArray(d.recs)){
-      d={v:10,start:d.start==null?null:d.start,cats:clone(DEFAULT_CATS),recs:d.recs};
+      d={v:10,start:d.start==null?null:d.start,cats:[],recs:d.recs};
+    }
+    /* v10 → v11：支出「其他」多一個小類「存錢」（紀錄不用動） */
+    if(d&&d.v===10&&Array.isArray(d.recs)){
+      d={v:11,start:d.start==null?null:d.start,cats:clone(DEFAULT_CATS),recs:d.recs};
     }
     return d;
   }
@@ -866,6 +870,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     dots:'M6 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z M14 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z M22 12.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 1 0 0-3z',
     briefcase:'M4 9h20v14H4z M10 9V6.5A1.5 1.5 0 0 1 11.5 5h5A1.5 1.5 0 0 1 18 6.5V9 M4 15h20',
     cash:'M3 8h22v12H3z M14 11a3 3 0 1 0 0 6 3 3 0 1 0 0-6z M7 11v6 M21 11v6',
+    piggy:'M5.5 14.5a8.5 6.5 0 1 0 17 0a8.5 6.5 0 1 0-17 0z M22.5 12.5h2v4h-2 M9.5 9.2 8.5 5.5l4 2.4 M10 20.3V24 M18 20.3V24 M12 10.5h4 M9.5 13.5h.01',
     gift:'M4 11h20v4H4z M6 15v9h16v-9 M14 11v13 M14 11c-2-4-7-5-7-2 0 2 4 2 7 2z M14 11c2-4 7-5 7-2 0 2-4 2-7 2z',
     chart:'M4 22l7-7 5 4 8-10 M18 9h6v6',
     envelope:'M7 3h14v22H7z M7 10l7 4 7-4 M14 17v3',
@@ -959,10 +964,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   /* ---------- 主頁 ---------- */
   function paintHome(){
-    var sin=0,sout=0,min=0,mout=0,mk=today().slice(0,7);
+    var sin=0,sout=0,min=0,mout=0,msave=0,mk=today().slice(0,7);
     db.recs.forEach(function(r){
       if(r.kind==='in')sin+=r.amt;else sout+=r.amt;
-      if(r.date.slice(0,7)===mk){if(r.kind==='in')min+=r.amt;else mout+=r.amt}
+      if(r.date.slice(0,7)===mk){if(r.kind==='in')min+=r.amt;else{mout+=r.amt;if(isSaving(r))msave+=r.amt}}
     });
     var has=db.start!=null;
     $('total').textContent=fmt((db.start||0)+sin-sout);
@@ -973,7 +978,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('setupBtn').hidden=has;
     $('monthIn').textContent=(min?'+':'')+fmt(min);
     $('monthOut').textContent=(mout?'−':'')+fmt(mout);
-    paintMood(min,mout);
+    paintMood(min,mout-msave);  /* 存錢是好事，那句話和小寵物的心情不算它 */
     var mb=$('mood');
     $('moodRow').hidden=mb.hidden;
     if(!mb.hidden)paintPet((db.start||0)+sin-sout,mb.dataset.lv);
@@ -1016,6 +1021,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     zero:['這個月還沒花錢，太神了','零支出，傳說級','錢包還沒打開過','錢錢一塊都沒少','零元生活挑戰中','完全沒花錢，你是怎麼做到的','錢包在冬眠','這個月的支出：零','一毛都沒花，厲害','錢錢原封不動','荷包滿血狀態','錢錢在睡大覺']
   };
   var RANK={good:0,ok:1,warn:2,bad:3};
+  function isSaving(r){return r.kind==='out'&&r.cat==='out-other'&&r.sub==='saving'}
   function moodLevel(min,mout,now){
     if(!(mout>0))return 'zero';
     var mk=ymd(now).slice(0,7),day=now.getDate(),dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
@@ -1024,7 +1030,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     db.recs.forEach(function(r){
       var k=r.date.slice(0,7);
       if(!first||k<first)first=k;
-      if(r.kind==='out')out[k]=(out[k]||0)+r.amt;
+      if(r.kind==='out'&&!isSaving(r))out[k]=(out[k]||0)+r.amt;
     });
     var months=[],y=+first.slice(0,4),m=+first.slice(5,7);
     for(;;){m++;if(m>12){m=1;y++}var k=y+'-'+pad(m);if(k>=mk)break;months.push(k)}
@@ -1181,7 +1187,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var n=0,sum=0;
     db.recs.forEach(function(r){if(r.kind===rec.kind&&r.id!==rec.id){n++;sum+=r.amt}});
     var x=n?rec.amt/(sum/n):1;
-    pet.react=x<1?'nod':x<3?'hop':rec.kind==='out'?'shock':'happy';
+    pet.react=isSaving(rec)?'happy':x<1?'nod':x<3?'hop':rec.kind==='out'?'shock':'happy';  /* 存錢一律開心 */
     pet.seq++;
     clearTimeout(pet.timer);
     var big=pet.react==='shock'||pet.react==='happy';
