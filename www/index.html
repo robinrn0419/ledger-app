@@ -983,6 +983,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('moodRow').hidden=mb.hidden;
     if(!mb.hidden)paintPet((db.start||0)+sin-sout,mb.dataset.lv);
     pushWidget({total:Math.round((db.start||0)+sin-sout),mood:mb.hidden?'':mb.textContent,lv:mb.hidden?'':mb.dataset.lv});
+    pushSiri({total:Math.round((db.start||0)+sin-sout),mood:mb.hidden?'':mb.textContent,mk:mk,mIn:min,mOut:mout,mSave:msave});
 
     var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
@@ -2064,6 +2065,62 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     BOX.write({name:'widget.json',text:text}).catch(function(){widgetSent=''});
   }
   pushWidget();  /* 主頁第一次畫的時候 BOX 還沒準備好，這裡補寫 */
+
+  /* ---------- Siri ---------- */
+  /* siri.json：Siri 要用的總額、那句話、本月收支，和所有類別（每個大類、小類、細項各一筆，keys 從細到粗，Siri 照說的話比對）。
+     Siri 記的帳放在 siri-inbox.json，打開 App 或回到 App 時收進來（見 AppDelegate.swift 的 AddRecordIntent）。 */
+  var siriData=null,siriSent='',SIRI_IN='siri-inbox.json';
+  function siriCats(){
+    var list=[];
+    ['out','in'].forEach(function(kind){
+      db.cats.filter(function(c){return c.kind===kind}).forEach(function(c){
+        list.push({kind:kind,cat:c.id,sub:null,sub2:null,label:c.name,keys:[c.name]});
+        c.subs.forEach(function(s1){
+          list.push({kind:kind,cat:c.id,sub:s1.id,sub2:null,label:c.name+'・'+s1.name,keys:[s1.name,c.name]});
+          (s1.subs||[]).forEach(function(s2){
+            list.push({kind:kind,cat:c.id,sub:s1.id,sub2:s2.id,label:c.name+'・'+s1.name+'・'+s2.name,keys:[s2.name,s1.name,c.name]});
+          });
+        });
+      });
+    });
+    return list;
+  }
+  function pushSiri(d){
+    if(d){d.cats=siriCats();siriData=d}
+    if(!BOX||!siriData)return;
+    var text=JSON.stringify(siriData);
+    if(text===siriSent)return;
+    siriSent=text;
+    BOX.write({name:'siri.json',text:text}).catch(function(){siriSent=''});
+  }
+  pushSiri();
+  function takeSiri(){
+    if(!BOX)return;
+    BOX.read({name:SIRI_IN}).then(function(res){
+      var list=res&&res.text?JSON.parse(res.text):[];
+      if(!Array.isArray(list)||!list.length)return;
+      var have={};db.recs.forEach(function(r){have[r.id]=1});
+      var ok=function(x){return x&&x.id&&!have[x.id]&&x.amt>0&&(x.kind==='in'||x.kind==='out')&&db.cats.some(function(c){return c.id===x.cat})};
+      var add=list.filter(ok).map(function(x){
+        return {id:x.id,kind:x.kind,amt:Math.round(x.amt),cat:x.cat,sub:x.sub||null,sub2:x.sub2||null,date:x.date||today(),note:x.note||'',proj:null,src:'siri',ref:null,at:x.at||Date.now(),upd:x.at||Date.now()};
+      });
+      if(add.length){
+        add.forEach(function(r){db.recs.push(r)});
+        if(!save()){db.recs.splice(db.recs.length-add.length,add.length);return}
+      }
+      /* 收完把這些從收件匣拿掉（重讀一次，這中間 Siri 又記的留著） */
+      var done={};list.forEach(function(x){if(x&&x.id)done[x.id]=1});
+      BOX.read({name:SIRI_IN}).then(function(r2){
+        var now=r2&&r2.text?JSON.parse(r2.text):[];
+        var left=(Array.isArray(now)?now:[]).filter(function(x){return x&&!done[x.id]});
+        return BOX.write({name:SIRI_IN,text:JSON.stringify(left)});
+      }).catch(function(){});
+      if(add.length){
+        if(current===1)paintHome();
+        toast('Siri 記的 '+add.length+' 筆已加入');
+      }
+    }).catch(function(){});
+  }
   var CP_FILE='class-pay-records.json',CP_TIME='ledger-classpay-sync',cpErr='',cpBusy=false;
   var CP_CLS={contest:1,advanced:1,regular:1,other:1};
   /* 課堂薪水的一筆要記到哪：教學 → 薪資・教學・班別（舊紀錄沒有班別 → 其他），其他三種 → 薪資・接案・同名細項 */
@@ -2204,6 +2261,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     pet.lv=null;  /* 每次打開都換一個表情 */
     if(current===1)paintHome();
     syncClassPay();  /* 可能剛在課堂薪水算完一筆 */
+    takeSiri();      /* 可能剛用 Siri 記了帳 */
   });
 
   /* 關掉雙指縮放，讓按下的回饋在 iOS 上生效 */
@@ -2212,6 +2270,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   show(1);
   syncClassPay();
+  takeSiri();
   if(db.recs.length||db.start!=null)autoBackup();  /* 打開 App 時也更新一次（例如剛換成新版、資料格式升級過） */
 })();
 </script>

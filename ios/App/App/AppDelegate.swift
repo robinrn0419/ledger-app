@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import WidgetKit
+import AppIntents
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -286,5 +287,169 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                 if b.alpha == 0 { b.isHidden = true }
             }
         }
+    }
+}
+
+/* ---------- Siri（App Intents，iOS 17 起） ----------
+   網頁每次畫主頁時寫 siri.json（總額、那句話、本月收支、所有類別的名稱），Siri 從這裡讀；
+   Siri 記的帳先放進 siri-inbox.json，App 下次打開時收進紀錄。總額和小工具先在這裡加減，不用等 App 打開。 */
+@available(iOS 17.0, *)
+enum SiriBox {
+    static func url(_ name: String) -> URL? {
+        SharedBoxPlugin.container()?.url.appendingPathComponent(name)
+    }
+    static func read(_ name: String) -> Any? {
+        guard let u = url(name), let d = try? Data(contentsOf: u) else { return nil }
+        return try? JSONSerialization.jsonObject(with: d)
+    }
+    static func write(_ name: String, _ obj: Any) {
+        guard let u = url(name), let d = try? JSONSerialization.data(withJSONObject: obj) else { return }
+        try? d.write(to: u, options: .atomic)
+    }
+    static func dateText(_ format: String) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = .current
+        f.dateFormat = format
+        return f.string(from: Date())
+    }
+    static func money(_ n: Double) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.maximumFractionDigits = 0
+        return f.string(from: NSNumber(value: n)) ?? String(Int(n))
+    }
+    static func num(_ v: Any?) -> Double { (v as? NSNumber)?.doubleValue ?? 0 }
+
+    /* 照說的話找類別：完全一樣的最優先，越細的層越優先；同分取前面的（支出排在收入前面） */
+    static func match(_ spoken: String, _ cats: [[String: Any]]) -> [String: Any]? {
+        var best: [String: Any]? = nil
+        var bestScore = 0
+        for c in cats {
+            let keys = c["keys"] as? [String] ?? []
+            var score = 0
+            for (i, k) in keys.enumerated() where !k.isEmpty {
+                var sc = 0
+                if k == spoken { sc = 100 - i * 20 }
+                else if k.count >= 2 && spoken.contains(k) { sc = 60 - i * 10 }
+                else if spoken.count >= 2 && k.contains(spoken) { sc = 40 - i * 10 }
+                score = max(score, sc)
+            }
+            if score > 0 { score -= keys.count }  /* 同樣分數時，大類比底下的「其他」優先 */
+            if score > bestScore { bestScore = score; best = c }
+        }
+        return best
+    }
+}
+
+@available(iOS 17.0, *)
+struct AddRecordIntent: AppIntent {
+    static let title: LocalizedStringResource = "記一筆"
+    static let description: IntentDescription? = IntentDescription("用說的記一筆帳，例如「午餐 120」")
+
+    @Parameter(title: "金額", requestValueDialog: IntentDialog("多少錢？"))
+    var amount: Int
+
+    @Parameter(title: "類別", requestValueDialog: IntentDialog("記在什麼？例如午餐、計程車、月薪"))
+    var item: String
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard amount > 0 else { return .result(dialog: "金額要大於 0 喔") }
+        guard var info = SiriBox.read("siri.json") as? [String: Any] else {
+            return .result(dialog: "請先打開一次記一筆，Siri 才知道有哪些類別")
+        }
+        let spoken = item.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cats = info["cats"] as? [[String: Any]] ?? []
+        var kind = "out", cat = "out-other", label = "其他・雜項", note = ""
+        var sub: Any = "misc", sub2: Any = NSNull()
+        if let c = SiriBox.match(spoken, cats) {
+            kind = c["kind"] as? String ?? "out"
+            cat = c["cat"] as? String ?? cat
+            sub = c["sub"] ?? NSNull()
+            sub2 = c["sub2"] ?? NSNull()
+            label = c["label"] as? String ?? spoken
+        } else {
+            note = spoken  /* 找不到類別：先記在其他・雜項，說的話放在備註 */
+        }
+        let now = Date()
+        let rec: [String: Any] = [
+            "id": "s" + String(Int(now.timeIntervalSince1970 * 1000), radix: 36) + String(Int.random(in: 1000...9999)),
+            "kind": kind, "amt": amount, "cat": cat, "sub": sub, "sub2": sub2,
+            "date": SiriBox.dateText("yyyy-MM-dd"), "note": note, "at": Int(now.timeIntervalSince1970 * 1000)
+        ]
+        var inbox = SiriBox.read("siri-inbox.json") as? [[String: Any]] ?? []
+        inbox.append(rec)
+        SiriBox.write("siri-inbox.json", inbox)
+
+        /* 總額、本月收支先跟著加減，馬上問「還有多少錢」才會對 */
+        let amt = Double(amount)
+        let mk = SiriBox.dateText("yyyy-MM")
+        if (info["mk"] as? String) != mk { info["mk"] = mk; info["mIn"] = 0; info["mOut"] = 0; info["mSave"] = 0 }
+        let total = SiriBox.num(info["total"]) + (kind == "in" ? amt : -amt)
+        info["total"] = total
+        if kind == "in" { info["mIn"] = SiriBox.num(info["mIn"]) + amt } else { info["mOut"] = SiriBox.num(info["mOut"]) + amt }
+        if cat == "out-other" && (sub as? String) == "saving" { info["mSave"] = SiriBox.num(info["mSave"]) + amt }
+        SiriBox.write("siri.json", info)
+        if var w = SiriBox.read("widget.json") as? [String: Any] {
+            w["total"] = Int(total.rounded())
+            SiriBox.write("widget.json", w)
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+
+        let sign = kind == "in" ? "收入" : "支出"
+        var say = "已記下\(sign)：\(label) \(SiriBox.money(amt)) 元"
+        if !note.isEmpty { say = "沒有「\(spoken)」這個類別，先記在其他・雜項 \(SiriBox.money(amt)) 元，備註寫\(spoken)" }
+        return .result(dialog: IntentDialog(stringLiteral: say + "。現在有 \(SiriBox.money(total)) 元"))
+    }
+}
+
+@available(iOS 17.0, *)
+struct TotalIntent: AppIntent {
+    static let title: LocalizedStringResource = "還有多少錢"
+    static let description: IntentDescription? = IntentDescription("說出財產總額和主頁那句話")
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let info = SiriBox.read("siri.json") as? [String: Any] else {
+            return .result(dialog: "請先打開一次記一筆")
+        }
+        var say = "你現在有 \(SiriBox.money(SiriBox.num(info["total"]))) 元"
+        if let mood = info["mood"] as? String, !mood.isEmpty { say += "。\(mood)" }
+        return .result(dialog: IntentDialog(stringLiteral: say))
+    }
+}
+
+@available(iOS 17.0, *)
+struct MonthIntent: AppIntent {
+    static let title: LocalizedStringResource = "這個月花多少"
+    static let description: IntentDescription? = IntentDescription("說出這個月的收入和支出")
+
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        guard let info = SiriBox.read("siri.json") as? [String: Any] else {
+            return .result(dialog: "請先打開一次記一筆")
+        }
+        let same = (info["mk"] as? String) == SiriBox.dateText("yyyy-MM")
+        let mIn = same ? SiriBox.num(info["mIn"]) : 0
+        let mOut = same ? SiriBox.num(info["mOut"]) : 0
+        let mSave = same ? SiriBox.num(info["mSave"]) : 0
+        var say = "這個月支出 \(SiriBox.money(mOut)) 元，收入 \(SiriBox.money(mIn)) 元"
+        if mSave > 0 { say += "，支出裡有 \(SiriBox.money(mSave)) 元是存錢" }
+        return .result(dialog: IntentDialog(stringLiteral: say))
+    }
+}
+
+/* 不用自己設定捷徑，直接對 Siri 說就能用；中文說法在 zh-Hant.lproj/AppShortcuts.strings */
+@available(iOS 17.0, *)
+struct LedgerShortcuts: AppShortcutsProvider {
+    static var appShortcuts: [AppShortcut] {
+        AppShortcut(intent: AddRecordIntent(),
+                    phrases: ["用\(.applicationName)記帳", "\(.applicationName)記帳", "在\(.applicationName)記帳"],
+                    shortTitle: "記一筆", systemImageName: "square.and.pencil")
+        AppShortcut(intent: TotalIntent(),
+                    phrases: ["\(.applicationName)還有多少錢", "我在\(.applicationName)還有多少錢"],
+                    shortTitle: "還有多少錢", systemImageName: "dollarsign.circle")
+        AppShortcut(intent: MonthIntent(),
+                    phrases: ["\(.applicationName)這個月花多少", "\(.applicationName)這個月花了多少"],
+                    shortTitle: "這個月花多少", systemImageName: "calendar")
     }
 }

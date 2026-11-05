@@ -136,6 +136,11 @@
   - 拖（按住 0.2 秒沒移動）：MEDIUM 震動抓起來，`held` 吊著晃、腳亂踢、眼睛睜大（錢太少 `heldmad` 晃很快、生氣），`#pet` 跟著手指 translate；放開用 `--spring` 彈回，落地震一下（一萬以上 HEAVY）＋`boing`（錢太少 `mad`）。
   - 使用者說「不絲滑」（摸／戳、按住太久）→ v1.0.28：按住改 0.2 秒、移動超過 10px 才算摸；一次性動作（boing、huff…）`o.n=pet.seq` 讓連戳每一下都重播；會重複的動作（`PET_LOOP`：purr、meh、mad、held、heldmad，連瘦身材的 sway）keyframes 頭尾都是原樣，`petClear()` 等 `animationiteration`（最多 1.1 秒）才換回平常，不會從半路跳回去。
 
+**Siri（2026-11-05，使用者選：用說的記帳、問還有多少錢、問這個月花多少）**：用 App Intents（iOS 17 起，寫在 `AppDelegate.swift` 後面，免費簽名不用 Siri 權限）。三個 `AppShortcut` 直接對 Siri 說就能用（中文說法要放在 `ios/App/App/zh-Hant.lproj/AppShortcuts.strings`，因為專案的 developmentRegion 是 en；這個檔已手動加進 `project.pbxproj`，ID `A1C1A55A…05/06/07`）：
+- 「用記一筆記帳」`AddRecordIntent`：Siri 問「多少錢？」「記在什麼？」→ 照說的話比對類別（網頁 `siriCats()` 把每個大類、小類、細項各列一筆，`keys` 從細到粗；`SiriBox.match`：完全一樣＞包含，越細越優先，同分時大類優先、支出排前面）。找不到就記在支出・其他・雜項、說的話放備註。記的帳先寫 `siri-inbox.json`，同時改 `siri.json` 的總額／本月收支和 `widget.json` 的總額（小工具馬上更新）。
+- 「記一筆還有多少錢」`TotalIntent`：財產總額＋主頁那句話。「記一筆這個月花多少」`MonthIntent`：本月支出、收入（有存錢會多說一句）；`mk` 不是這個月就說 0。
+- 網頁：`paintHome()` 呼叫 `pushSiri()` 寫 `siri.json`（有變才寫）；`takeSiri()` 在打開 App 和 visibilitychange 時把收件匣收進紀錄（`src:'siri'`，用 id 去重；收完重讀一次只拿掉收過的），提示「Siri 記的 N 筆已加入」。Siri 記的紀錄跟手動的一樣可以改、刪。
+
 **桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**
 - `paintHome()` 把 `{total, mood, lv}` 交給 `pushWidget()`，內容有變才用 SharedBox 寫 `widget.json`；原生 `write()` 寫到 `widget.json` 時會 `WidgetCenter.shared.reloadAllTimelines()`。小工具本身不會換日重算那句話，要等 App 下次打開。
 - 小工具程式在 `ios/App/Widget/`（`LedgerWidget.swift`、`Info.plist`、`Widget.entitlements` 同 App 的 group），iOS 17 起。使用者沒有 Mac，`build.yml` 每次打包用 `scripts/add-widget.rb`（xcodeproj gem）把 Widget target 加進專案、嵌進 App.app/PlugIns；臨時簽名時 appex 用自己的 entitlements 簽，找不到 Widget.appex 就讓打包失敗。
