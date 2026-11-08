@@ -502,6 +502,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .plot{padding:6px 0 4px}
 .keys-row{padding:4px 4px 0}
 #s7 .foot{margin-left:4px;margin-right:4px}
+.foot.siri-log{margin-top:-12px;white-space:pre-line;font-variant-numeric:tabular-nums}
 .foot.ver{text-align:center;margin-top:32px;margin-bottom:24px;letter-spacing:.02em}
 
 /* ---------- 沒有原生玻璃（iOS 26 以前、網頁版）：不用玻璃，改回一般的 iPhone 樣子 ---------- */
@@ -636,6 +637,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <div class="group" id="cpBox" hidden><ul class="list" id="cpInfo"></ul></div>
       <p class="foot" id="cpFoot" hidden></p>
       <p class="foot ver" id="appVer">記一筆 v__APP_VER__<br><span id="glassInfo"></span></p>
+      <p class="foot ver siri-log" id="siriLog" hidden></p>
     </section>
 
     <!-- 7 統計 -->
@@ -2027,6 +2029,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   function paintData(){
     $('glassInfo').textContent=glassNote;
+    paintSiriLog();
     var last=+(function(){try{return localStorage.getItem(BK_TIME)}catch(e){return 0}})()||0;
     var rows=[['紀錄',db.recs.length+' 筆']];
     rows.push(['最近一次自動備份',!FS?'只有 App 版有':bkErr?'失敗：'+bkErr:last?agoText(last):'還沒有']);
@@ -2094,6 +2097,16 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     BOX.write({name:'siri.json',text:text}).catch(function(){siriSent=''});
   }
   pushSiri();
+  /* 查 Siri 問題用：App 啟動、Siri 叫到哪個指令（原生寫 siri-log.json） */
+  function paintSiriLog(){
+    var box=$('siriLog');
+    if(!BOX){box.hidden=true;return}
+    BOX.read({name:'siri-log.json'}).then(function(res){
+      var list=res&&res.text?JSON.parse(res.text):[];
+      box.hidden=false;
+      box.textContent='Siri 紀錄（最近的在下面）\n'+(list.length?list.join('\n'):'還沒有');
+    }).catch(function(){box.hidden=true});
+  }
   function takeSiri(){
     if(!BOX)return;
     BOX.read({name:SIRI_IN}).then(function(res){

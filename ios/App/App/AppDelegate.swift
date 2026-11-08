@@ -10,6 +10,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        if #available(iOS 17.0, *) {
+            SiriBox.log("App 啟動（" + (application.applicationState == .background ? "背景" : "前景") + "）")
+        }
         return true
     }
 
@@ -322,6 +325,14 @@ enum SiriBox {
     }
     static func num(_ v: Any?) -> Double { (v as? NSNumber)?.doubleValue ?? 0 }
 
+    /* 查問題用：最近 12 件事（App 啟動、Siri 叫到哪個指令），網頁在「資料與備份」最下面顯示 */
+    static func log(_ msg: String) {
+        var list = read("siri-log.json") as? [String] ?? []
+        list.append(dateText("M/d HH:mm:ss") + " " + msg)
+        if list.count > 12 { list.removeFirst(list.count - 12) }
+        write("siri-log.json", list)
+    }
+
     /* 照說的話找類別：完全一樣的最優先，越細的層越優先；同分取前面的（支出排在收入前面） */
     static func match(_ spoken: String, _ cats: [[String: Any]]) -> [String: Any]? {
         var best: [String: Any]? = nil
@@ -359,6 +370,7 @@ struct AddRecordIntent: AppIntent {
     var item: String
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        SiriBox.log("Siri：記一筆 \(amount) \(item)")
         guard amount > 0 else { return .result(dialog: "金額要大於 0 喔") }
         guard var info = SiriBox.read("siri.json") as? [String: Any] else {
             return .result(dialog: "請先打開一次記一筆，Siri 才知道有哪些類別")
@@ -418,6 +430,7 @@ struct TotalIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        SiriBox.log("Siri：還有多少錢")
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
             return .result(dialog: "請先打開一次記一筆")
         }
@@ -437,6 +450,7 @@ struct MonthIntent: AppIntent {
     static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        SiriBox.log("Siri：這個月花多少")
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
             return .result(dialog: "請先打開一次記一筆")
         }

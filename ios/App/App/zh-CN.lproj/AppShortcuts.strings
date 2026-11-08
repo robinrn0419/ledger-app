@@ -1,0 +1,8 @@
+/* Siri 的簡體中文說法（Siri 設成中文（中國大陸）時用），key 和繁體一樣。 */
+"用${applicationName}記帳" = "用${applicationName}记账";
+"${applicationName}記帳" = "${applicationName}记账";
+"在${applicationName}記帳" = "在${applicationName}记账";
+"${applicationName}還有多少錢" = "${applicationName}还有多少钱";
+"我在${applicationName}還有多少錢" = "我在${applicationName}还有多少钱";
+"${applicationName}這個月花多少" = "${applicationName}这个月花多少";
+"${applicationName}這個月花了多少" = "${applicationName}这个月花了多少";
