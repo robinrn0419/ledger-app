@@ -1,0 +1,8 @@
+/* Siri 的中文說法（AppDelegate.swift 的 LedgerShortcuts）。${applicationName} 是主畫面名稱「記一筆」。 */
+"用${applicationName}記帳" = "用${applicationName}記帳";
+"${applicationName}記帳" = "${applicationName}記帳";
+"在${applicationName}記帳" = "在${applicationName}記帳";
+"${applicationName}還有多少錢" = "${applicationName}還有多少錢";
+"我在${applicationName}還有多少錢" = "我在${applicationName}還有多少錢";
+"${applicationName}這個月花多少" = "${applicationName}這個月花多少";
+"${applicationName}這個月花了多少" = "${applicationName}這個月花了多少";

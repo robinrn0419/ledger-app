@@ -1,0 +1,2 @@
+/* 主畫面顯示的名稱。Info.plist 裡用英文 Ledger（SideStore 向 Apple 註冊 App ID 只收英數字），這裡讓 iPhone 顯示中文。 */
+"CFBundleDisplayName" = "記一筆";

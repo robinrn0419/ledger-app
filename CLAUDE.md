@@ -140,6 +140,7 @@
 - 「用記一筆記帳」`AddRecordIntent`：Siri 問「多少錢？」「記在什麼？」→ 照說的話比對類別（網頁 `siriCats()` 把每個大類、小類、細項各列一筆，`keys` 從細到粗；`SiriBox.match`：完全一樣＞包含，越細越優先，同分時大類優先、支出排前面）。找不到就記在支出・其他・雜項、說的話放備註。記的帳先寫 `siri-inbox.json`，同時改 `siri.json` 的總額／本月收支和 `widget.json` 的總額（小工具馬上更新）。
 - 「記一筆還有多少錢」`TotalIntent`：財產總額＋主頁那句話。「記一筆這個月花多少」`MonthIntent`：本月支出、收入（有存錢會多說一句）；`mk` 不是這個月就說 0。
 - v1.0.30 真機：捷徑 App 裡點「還有多少錢」會回答，但直接對 Siri 說會變成「需要在 App 中繼續」。使用者**不要**自己做個人捷徑的替代方法，要 Siri 直接回答 → v1.0.31 三個 intent 都加 `openAppWhenRun=false`、`authenticationPolicy=.alwaysAllowed`、iOS 26 `supportedModes=.background`。
+- v1.0.31 還是「需要在 App 中繼續」→ 懷疑 Siri 語言是 zh-TW、只對到 zh-Hant 不夠 → v1.0.32：另外放 `zh-TW.lproj`、`zh-HK.lproj` 的 `AppShortcuts.strings`，**同時也要複製 `InfoPlist.strings`**（不然 iPhone 改選 zh-TW 資料夾時讀不到「記一筆」，主畫面會變回 Ledger）；pbxproj 的 knownRegions 加 zh-TW、zh-HK（ID `…08`～`…0B`）；Info.plist 加 `INAlternativeAppNames`＝記一筆，讓 Siri 認得 App 名字。
 - 網頁：`paintHome()` 呼叫 `pushSiri()` 寫 `siri.json`（有變才寫）；`takeSiri()` 在打開 App 和 visibilitychange 時把收件匣收進紀錄（`src:'siri'`，用 id 去重；收完重讀一次只拿掉收過的），提示「Siri 記的 N 筆已加入」。Siri 記的紀錄跟手動的一樣可以改、刪。
 
 **桌面小工具（2026-10-11，使用者選：2×2 小方塊、總額＋那句話、直接顯示不藏）**

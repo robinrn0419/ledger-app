@@ -34,7 +34,11 @@
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
 		A1C1A55A0000000000000003 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A1C1A55A0000000000000004 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A1C1A55A000000000000000A /* zh-TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-TW"; path = "zh-TW.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A1C1A55A000000000000000B /* zh-HK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-HK"; path = "zh-HK.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		A1C1A55A0000000000000007 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
+		A1C1A55A0000000000000008 /* zh-TW */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-TW"; path = "zh-TW.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
+		A1C1A55A0000000000000009 /* zh-HK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-HK"; path = "zh-HK.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +135,8 @@
 				en,
 				Base,
 				"zh-Hant",
+				"zh-TW",
+				"zh-HK",
 			);
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
@@ -197,6 +203,8 @@
 			children = (
 				A1C1A55A0000000000000003 /* en */,
 				A1C1A55A0000000000000004 /* zh-Hant */,
+				A1C1A55A000000000000000A /* zh-TW */,
+				A1C1A55A000000000000000B /* zh-HK */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
@@ -205,6 +213,8 @@
 			isa = PBXVariantGroup;
 			children = (
 				A1C1A55A0000000000000007 /* zh-Hant */,
+				A1C1A55A0000000000000008 /* zh-TW */,
+				A1C1A55A0000000000000009 /* zh-HK */,
 			);
 			name = AppShortcuts.strings;
 			sourceTree = "<group>";
