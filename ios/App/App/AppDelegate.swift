@@ -347,6 +347,10 @@ enum SiriBox {
 struct AddRecordIntent: AppIntent {
     static let title: LocalizedStringResource = "記一筆"
     static let description: IntentDescription? = IntentDescription("用說的記一筆帳，例如「午餐 120」")
+    static let openAppWhenRun: Bool = false  /* 不打開 App，直接在背景回答 */
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed  /* 鎖定時也能用 */
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .background }
 
     @Parameter(title: "金額", requestValueDialog: IntentDialog("多少錢？"))
     var amount: Int
@@ -408,6 +412,10 @@ struct AddRecordIntent: AppIntent {
 struct TotalIntent: AppIntent {
     static let title: LocalizedStringResource = "還有多少錢"
     static let description: IntentDescription? = IntentDescription("說出財產總額和主頁那句話")
+    static let openAppWhenRun: Bool = false  /* 不打開 App，直接在背景回答 */
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed  /* 鎖定時也能用 */
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
@@ -423,6 +431,10 @@ struct TotalIntent: AppIntent {
 struct MonthIntent: AppIntent {
     static let title: LocalizedStringResource = "這個月花多少"
     static let description: IntentDescription? = IntentDescription("說出這個月的收入和支出")
+    static let openAppWhenRun: Bool = false  /* 不打開 App，直接在背景回答 */
+    static let authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed  /* 鎖定時也能用 */
+    @available(iOS 26.0, *)
+    static var supportedModes: IntentModes { .background }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
