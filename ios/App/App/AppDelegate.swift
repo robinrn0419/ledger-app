@@ -325,11 +325,18 @@ enum SiriBox {
     }
     static func num(_ v: Any?) -> Double { (v as? NSNumber)?.doubleValue ?? 0 }
 
-    /* 查問題用：最近 12 件事（App 啟動、Siri 叫到哪個指令），網頁在「資料與備份」最下面顯示 */
+    /* Siri 的回答：唸的和畫面上顯示的分開給（有些版本只給一種 Siri 不會唸），也記進紀錄 */
+    static func say(_ text: String) -> IntentDialog {
+        log("回答：" + text)
+        let r = LocalizedStringResource(stringLiteral: text)
+        return IntentDialog(full: r, supporting: r)
+    }
+
+    /* 查問題用：最近 20 件事（App 啟動、Siri 叫到哪個指令），網頁在「資料與備份」最下面顯示 */
     static func log(_ msg: String) {
         var list = read("siri-log.json") as? [String] ?? []
         list.append(dateText("M/d HH:mm:ss") + " " + msg)
-        if list.count > 12 { list.removeFirst(list.count - 12) }
+        if list.count > 20 { list.removeFirst(list.count - 20) }
         write("siri-log.json", list)
     }
 
@@ -371,9 +378,9 @@ struct AddRecordIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         SiriBox.log("Siri：記一筆 \(amount) \(item)")
-        guard amount > 0 else { return .result(dialog: "金額要大於 0 喔") }
+        guard amount > 0 else { return .result(dialog: SiriBox.say("金額要大於 0 喔")) }
         guard var info = SiriBox.read("siri.json") as? [String: Any] else {
-            return .result(dialog: "請先打開一次記一筆，Siri 才知道有哪些類別")
+            return .result(dialog: SiriBox.say("請先打開一次記一筆，Siri 才知道有哪些類別"))
         }
         let spoken = item.trimmingCharacters(in: .whitespacesAndNewlines)
         let cats = info["cats"] as? [[String: Any]] ?? []
@@ -416,7 +423,7 @@ struct AddRecordIntent: AppIntent {
         let sign = kind == "in" ? "收入" : "支出"
         var say = "已記下\(sign)：\(label) \(SiriBox.money(amt)) 元"
         if !note.isEmpty { say = "沒有「\(spoken)」這個類別，先記在其他・雜項 \(SiriBox.money(amt)) 元，備註寫\(spoken)" }
-        return .result(dialog: IntentDialog(stringLiteral: say + "。現在有 \(SiriBox.money(total)) 元"))
+        return .result(dialog: SiriBox.say(say + "。現在有 \(SiriBox.money(total)) 元"))
     }
 }
 
@@ -432,11 +439,11 @@ struct TotalIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         SiriBox.log("Siri：還有多少錢")
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
-            return .result(dialog: "請先打開一次記一筆")
+            return .result(dialog: SiriBox.say("請先打開一次記一筆"))
         }
         var say = "你現在有 \(SiriBox.money(SiriBox.num(info["total"]))) 元"
         if let mood = info["mood"] as? String, !mood.isEmpty { say += "。\(mood)" }
-        return .result(dialog: IntentDialog(stringLiteral: say))
+        return .result(dialog: SiriBox.say(say))
     }
 }
 
@@ -452,7 +459,7 @@ struct MonthIntent: AppIntent {
     func perform() async throws -> some IntentResult & ProvidesDialog {
         SiriBox.log("Siri：這個月花多少")
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
-            return .result(dialog: "請先打開一次記一筆")
+            return .result(dialog: SiriBox.say("請先打開一次記一筆"))
         }
         let same = (info["mk"] as? String) == SiriBox.dateText("yyyy-MM")
         let mIn = same ? SiriBox.num(info["mIn"]) : 0
@@ -460,7 +467,7 @@ struct MonthIntent: AppIntent {
         let mSave = same ? SiriBox.num(info["mSave"]) : 0
         var say = "這個月支出 \(SiriBox.money(mOut)) 元，收入 \(SiriBox.money(mIn)) 元"
         if mSave > 0 { say += "，支出裡有 \(SiriBox.money(mSave)) 元是存錢" }
-        return .result(dialog: IntentDialog(stringLiteral: say))
+        return .result(dialog: SiriBox.say(say))
     }
 }
 
