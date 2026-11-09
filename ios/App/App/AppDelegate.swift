@@ -135,7 +135,7 @@ public class SharedBoxPlugin: CAPPlugin, CAPBridgedPlugin {
    網頁用 set() 告訴它現在要哪些按鈕、上面寫什麼；按下時送 "tap" 事件回網頁，由網頁做原本的事。
    iOS 26 以前 info() 回 glass:false，網頁就繼續用自己畫的玻璃。 */
 @objc(GlassBarPlugin)
-public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
+public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin, UITabBarDelegate {
     public let identifier = "GlassBarPlugin"
     public let jsName = "GlassBar"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -145,7 +145,8 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var buttons: [String: UIButton] = [:]
     private var seg: UISegmentedControl?
-    private var tabBar: UIView?
+    private var tabBar: UITabBar?
+    private let tabIds = ["home", "cart", "chart", "settings"]
     private var primaryToKeyboard: NSLayoutConstraint?
     private var primaryToTabs: NSLayoutConstraint?
 
@@ -166,7 +167,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
         let primary = call.getObject("primary")
         let more = call.getBool("more") ?? false
         let segInfo = call.getObject("seg")
-        let tabs = call.getBool("tabs") ?? false
+        let tab = call.getString("tab")
         DispatchQueue.main.async {
             if #available(iOS 26.0, *) {
                 self.buildIfNeeded()
@@ -178,7 +179,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                             image: (primary?["plus"] as? Bool ?? false) ? "plus" : nil, enabled: true)
                 self.update("more", show: more, title: nil, image: "ellipsis", enabled: true)
                 self.updateSeg(segInfo)
-                self.updateTabs(tabs)
+                self.updateTabs(tab)
             }
             call.resolve()
         }
@@ -231,48 +232,26 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
 
-        /* 主頁底部的分頁列：一條玻璃長條，裡面四個圖示＋小字（購物車、圖表、搜尋、設定） */
-        let bar = UIVisualEffectView(effect: UIGlassEffect())
+        /* 分頁列：用 iPhone 原生的 UITabBar（iOS 26 起是液態玻璃：平常淡淡標出在哪一頁，按住變成玻璃可以左右滑）。
+           只有圖示，四格：主頁、購物車、圖表、設定 */
+        let bar = UITabBar()
         bar.translatesAutoresizingMaskIntoConstraints = false
-        bar.layer.cornerRadius = 32
-        bar.layer.cornerCurve = .continuous
-        bar.clipsToBounds = true
+        bar.delegate = self
         bar.alpha = 0
         bar.isHidden = true
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.distribution = .fillEqually
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        for (id, title, image) in [("cart", "購物車", "cart"), ("chart", "圖表", "chart.pie"),
-                                   ("search", "搜尋", "magnifyingglass"), ("settings", "設定", "gearshape")] {
-            var c = UIButton.Configuration.plain()
-            c.image = UIImage(systemName: image, withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .medium))
-            c.imagePlacement = .top
-            c.imagePadding = 4
-            c.title = title
-            c.baseForegroundColor = .label
-            c.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { a in
-                var a = a
-                a.font = UIFont.systemFont(ofSize: 11, weight: .medium)
-                return a
-            }
-            let tb = UIButton(configuration: c)
-            tb.addAction(UIAction { [weak self] _ in
-                self?.notifyListeners("tap", data: ["id": "tab-" + id])
-            }, for: .touchUpInside)
-            stack.addArrangedSubview(tb)
+        let icons = ["house", "cart", "chart.pie", "gearshape"]
+        let names = ["主頁", "購物車", "圖表", "設定"]
+        bar.items = icons.enumerated().map { i, name in
+            let item = UITabBarItem(title: nil, image: UIImage(systemName: name), selectedImage: UIImage(systemName: name + ".fill"))
+            item.tag = i
+            item.accessibilityLabel = names[i]
+            return item
         }
-        bar.contentView.addSubview(stack)
         root.addSubview(bar)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: bar.contentView.leadingAnchor, constant: 6),
-            stack.trailingAnchor.constraint(equalTo: bar.contentView.trailingAnchor, constant: -6),
-            stack.topAnchor.constraint(equalTo: bar.contentView.topAnchor),
-            stack.bottomAnchor.constraint(equalTo: bar.contentView.bottomAnchor),
-            bar.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
-            bar.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -20),
-            bar.bottomAnchor.constraint(equalTo: safe.bottomAnchor, constant: -8),
-            bar.heightAnchor.constraint(equalToConstant: 64)
+            bar.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            bar.bottomAnchor.constraint(equalTo: root.bottomAnchor)
         ])
         tabBar = bar
         if let p = buttons["primary"] {
@@ -280,13 +259,20 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
+    public func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+        guard item.tag >= 0 && item.tag < tabIds.count else { return }
+        notifyListeners("tap", data: ["id": "tab-" + tabIds[item.tag]])
+    }
+
     @available(iOS 26.0, *)
-    private func updateTabs(_ show: Bool) {
+    private func updateTabs(_ tab: String?) {
         guard let bar = tabBar else { return }
-        if show {
+        if let tab = tab, let i = tabIds.firstIndex(of: tab) {
+            bar.selectedItem = bar.items?[i]
             primaryToKeyboard?.isActive = false
             primaryToTabs?.isActive = true
             bar.isHidden = false
+            bar.superview?.bringSubviewToFront(bar)
             if bar.alpha < 1 { UIView.animate(withDuration: 0.25) { bar.alpha = 1 } }
         } else {
             primaryToTabs?.isActive = false
