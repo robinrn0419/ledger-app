@@ -145,6 +145,9 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var buttons: [String: UIButton] = [:]
     private var seg: UISegmentedControl?
+    private var tabBar: UIView?
+    private var primaryToKeyboard: NSLayoutConstraint?
+    private var primaryToTabs: NSLayoutConstraint?
 
     @objc func info(_ call: CAPPluginCall) {
         let os = UIDevice.current.systemVersion
@@ -163,6 +166,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
         let primary = call.getObject("primary")
         let more = call.getBool("more") ?? false
         let segInfo = call.getObject("seg")
+        let tabs = call.getBool("tabs") ?? false
         DispatchQueue.main.async {
             if #available(iOS 26.0, *) {
                 self.buildIfNeeded()
@@ -174,6 +178,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                             image: (primary?["plus"] as? Bool ?? false) ? "plus" : nil, enabled: true)
                 self.update("more", show: more, title: nil, image: "ellipsis", enabled: true)
                 self.updateSeg(segInfo)
+                self.updateTabs(tabs)
             }
             call.resolve()
         }
@@ -214,13 +219,80 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin {
                     b.heightAnchor.constraint(equalToConstant: 44)
                 ])
             default:
-                /* 鍵盤跳出來時跟著往上，收起來時停在安全區上面 */
+                /* 鍵盤跳出來時跟著往上，收起來時停在安全區上面；主頁有分頁列時改成停在分頁列上面 */
+                let kb = b.bottomAnchor.constraint(equalTo: root.keyboardLayoutGuide.topAnchor, constant: -14)
+                primaryToKeyboard = kb
                 NSLayoutConstraint.activate([
                     b.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
                     b.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -20),
-                    b.bottomAnchor.constraint(equalTo: root.keyboardLayoutGuide.topAnchor, constant: -14),
+                    kb,
                     b.heightAnchor.constraint(equalToConstant: 56)
                 ])
+            }
+        }
+
+        /* 主頁底部的分頁列：一條玻璃長條，裡面四個圖示＋小字（購物車、圖表、搜尋、設定） */
+        let bar = UIVisualEffectView(effect: UIGlassEffect())
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        bar.layer.cornerRadius = 32
+        bar.layer.cornerCurve = .continuous
+        bar.clipsToBounds = true
+        bar.alpha = 0
+        bar.isHidden = true
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fillEqually
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        for (id, title, image) in [("cart", "購物車", "cart"), ("chart", "圖表", "chart.pie"),
+                                   ("search", "搜尋", "magnifyingglass"), ("settings", "設定", "gearshape")] {
+            var c = UIButton.Configuration.plain()
+            c.image = UIImage(systemName: image, withConfiguration: UIImage.SymbolConfiguration(pointSize: 19, weight: .medium))
+            c.imagePlacement = .top
+            c.imagePadding = 4
+            c.title = title
+            c.baseForegroundColor = .label
+            c.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { a in
+                var a = a
+                a.font = UIFont.systemFont(ofSize: 11, weight: .medium)
+                return a
+            }
+            let tb = UIButton(configuration: c)
+            tb.addAction(UIAction { [weak self] _ in
+                self?.notifyListeners("tap", data: ["id": "tab-" + id])
+            }, for: .touchUpInside)
+            stack.addArrangedSubview(tb)
+        }
+        bar.contentView.addSubview(stack)
+        root.addSubview(bar)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: bar.contentView.leadingAnchor, constant: 6),
+            stack.trailingAnchor.constraint(equalTo: bar.contentView.trailingAnchor, constant: -6),
+            stack.topAnchor.constraint(equalTo: bar.contentView.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bar.contentView.bottomAnchor),
+            bar.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 20),
+            bar.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -20),
+            bar.bottomAnchor.constraint(equalTo: safe.bottomAnchor, constant: -8),
+            bar.heightAnchor.constraint(equalToConstant: 64)
+        ])
+        tabBar = bar
+        if let p = buttons["primary"] {
+            primaryToTabs = p.bottomAnchor.constraint(equalTo: bar.topAnchor, constant: -10)
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private func updateTabs(_ show: Bool) {
+        guard let bar = tabBar else { return }
+        if show {
+            primaryToKeyboard?.isActive = false
+            primaryToTabs?.isActive = true
+            bar.isHidden = false
+            if bar.alpha < 1 { UIView.animate(withDuration: 0.25) { bar.alpha = 1 } }
+        } else {
+            primaryToTabs?.isActive = false
+            primaryToKeyboard?.isActive = true
+            if !bar.isHidden {
+                UIView.animate(withDuration: 0.2, animations: { bar.alpha = 0 }) { _ in if bar.alpha == 0 { bar.isHidden = true } }
             }
         }
     }

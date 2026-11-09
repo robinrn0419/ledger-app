@@ -92,7 +92,8 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 /* 內容區 */
 .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:0 16px calc(20px + env(safe-area-inset-bottom,0px))}
 .shell:has(.nav:not([hidden])) .scroll{padding-top:58px}
-.shell:has(.dock:not([hidden])) .scroll{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}  /* 底部按鈕浮在內容上，最後一列要能捲到按鈕上面 */
+.shell:has(.dock:not([hidden])) .scroll{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+.shell:has(.tabbar:not([hidden])) .scroll{padding-bottom:calc(166px + env(safe-area-inset-bottom,0px))}  /* 底部按鈕浮在內容上，最後一列要能捲到按鈕上面 */
 .screen{display:none}
 .screen.on{display:block;animation:push .4s var(--ease) both}
 .back .screen.on{animation-name:pop}
@@ -206,6 +207,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .amt-big span{font-family:var(--font);font-size:22px;font-weight:600;letter-spacing:0;margin-left:6px;color:var(--sec)}
 .amt-big.zero output{color:var(--sec);opacity:.5}
 .amt-big.shake{animation:shake .4s var(--ease)}
+.form.shake{animation:shake .4s var(--ease)}
 @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 .amt-note{min-height:18px;margin-top:2px;font-size:13px;color:var(--sec)}
 .grow{flex:1;min-height:16px}
@@ -316,6 +318,38 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .primary{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:56px;border-radius:28px;color:#FFFFFF;font-weight:600;font-size:18px;letter-spacing:.02em}
 .primary:disabled{background-color:var(--glass);color:var(--sec);transform:none;filter:none;cursor:default}
 .primary svg{width:20px;height:20px}
+/* 主頁底部的分頁列：購物車、圖表、搜尋、設定 */
+.dock:has(.tabbar:not([hidden])){padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+.tabbar{pointer-events:auto;display:flex;height:64px;margin-top:10px;border-radius:32px;padding:0 6px}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:500;color:var(--label);border-radius:26px;transition:transform .4s var(--spring),background .2s}
+.tabbar button:active{transform:scale(1.08)}
+.tabbar svg{width:23px;height:23px}
+.native-glass #tabbar{visibility:hidden}
+/* 購物車 */
+.cart-sum{display:flex;align-items:baseline;justify-content:space-between;margin:10px 4px 0;font-size:15px;color:var(--sec)}
+.cart-sum b{font-family:var(--round);font-size:26px;font-weight:700;color:var(--label);font-variant-numeric:tabular-nums}
+.cart-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px 8px 14px;background:var(--card)}
+.cart-row .ci{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left}
+.cart-row .ci span{min-width:0}
+.cart-row .ci b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-row .ci small{display:block;margin-top:1px;font-size:13px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-row .ca{flex:none;font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums}
+.cart-add{flex:none;height:32px;padding:0 14px;border-radius:16px;background:var(--fill);color:var(--tint);font-size:15px;font-weight:600;transition:transform .4s var(--spring)}
+.cart-add:active{transform:scale(1.08)}
+.form .f-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 16px;font-size:16px;text-align:left}
+.form .f-row + .f-row::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
+.form .f-row > span{flex:none;width:44px;color:var(--sec)}
+.form input{flex:1;min-width:0;height:52px;border:0;background:transparent;color:var(--label);font:inherit;font-size:17px;outline:none;-webkit-appearance:none;appearance:none}
+.form input::placeholder{color:var(--sec)}
+.form .f-pick b{flex:1;font-weight:400;text-align:left}
+.form .f-pick b.ph{color:var(--sec)}
+.form .f-pick::after{content:"";width:8px;height:8px;border-right:2px solid var(--sec);border-top:2px solid var(--sec);transform:rotate(45deg);opacity:.6;margin-right:4px}
+.form.bad-name #cfName::placeholder,.form.bad-amt #cfAmt::placeholder,.form.bad-cat #cfCatName{color:var(--red)}
+/* 搜尋 */
+.search-box{display:flex;align-items:center;gap:8px;height:42px;margin-top:8px;padding:0 12px;border-radius:12px;background:var(--fill);color:var(--sec)}
+.search-box svg{flex:none;width:18px;height:18px}
+.search-box input{flex:1;min-width:0;height:42px;border:0;background:transparent;color:var(--label);font:inherit;font-size:17px;outline:none;-webkit-appearance:none;appearance:none}
+.search-box input::-webkit-search-cancel-button{-webkit-appearance:none}
 
 /* 提示（已加入） */
 .toast{
@@ -519,6 +553,9 @@ body:not(.native-glass) .primary:active{transform:scale(.975);opacity:.85}
 body:not(.native-glass) .primary:disabled{background:var(--fill);color:var(--sec);transform:none;opacity:1}
 body:not(.native-glass) .more{background:var(--fill);color:var(--tint);width:36px;height:36px;top:16px;transition:opacity .15s}
 body:not(.native-glass) .more:active{opacity:.5}
+body:not(.native-glass) .tabbar{height:58px;border-radius:0;padding:0;margin:6px -20px 0;border-top:.5px solid var(--sep)}
+body:not(.native-glass) .tabbar button{color:var(--sec);border-radius:0}
+body:not(.native-glass) .tabbar button:active{transform:none;opacity:.5}
 body:not(.native-glass) .toast{background:var(--card);background-image:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:0 8px 28px rgba(0,0,0,.16),0 0 0 .5px var(--sep);border-radius:24px}
 body:not(.native-glass) .seg{border-radius:9px;padding:2px;box-shadow:none}
 body:not(.native-glass) .seg button{height:36px;border-radius:7px}
@@ -544,7 +581,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   <main class="scroll" id="scroll">
     <!-- 1 主頁 -->
     <section class="screen on" id="s1">
-      <button type="button" class="more glass" id="moreBtn" aria-label="資料與備份">
+      <button type="button" class="more glass" id="moreBtn" aria-label="設定" hidden>
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg>
       </button>
       <button type="button" class="total" id="totalBtn">
@@ -640,6 +677,32 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <p class="foot ver siri-log" id="siriLog" hidden></p>
     </section>
 
+    <!-- 9 購物車：想買的東西，按「加入」直接記成支出 -->
+    <section class="screen" id="s9">
+      <div class="cart-sum" id="cartSum"></div>
+      <div class="group" id="cartBox"><ul class="list" id="cartList"></ul></div>
+      <p class="empty" id="cartEmpty" hidden>還沒有想買的東西。<br>按下方「新增想買的」加一個。</p>
+      <p class="foot" id="cartFoot">按「加入」就記成今天的支出，東西會從清單拿掉；點一列可以修改。</p>
+    </section>
+
+    <!-- 10 購物車：新增／修改一項 -->
+    <section class="screen" id="s10">
+      <div class="group form">
+        <label class="f-row"><span>品名</span><input type="text" id="cfName" placeholder="想買什麼" maxlength="40" autocomplete="off" enterkeyhint="next"></label>
+        <label class="f-row"><span>金額</span><input type="text" id="cfAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off"></label>
+        <button type="button" class="f-row f-pick" id="cfCat"><span>類別</span><b id="cfCatName"></b></button>
+        <label class="f-row"><span>備註</span><input type="text" id="cfNote" placeholder="可不填" maxlength="60" autocomplete="off" enterkeyhint="done"></label>
+      </div>
+      <div class="group" id="cfDelBox"><button type="button" class="act del" id="cfDel">從購物車刪除</button></div>
+    </section>
+
+    <!-- 11 搜尋 -->
+    <section class="screen" id="s11">
+      <div class="search-box"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="m13 13 4.5 4.5"/></svg><input type="search" id="searchIn" placeholder="類別、備註、金額、日期" autocomplete="off" enterkeyhint="search"></div>
+      <p class="foot" id="searchFoot"></p>
+      <div id="searchList"></div>
+    </section>
+
     <!-- 7 統計 -->
     <section class="screen" id="s7">
       <div class="seg range" id="rangeSeg"><button type="button" data-v="month">月</button><button type="button" data-v="year">年</button><button type="button" data-v="all">全部</button></div>
@@ -677,7 +740,15 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     </section>
   </main>
 
-  <footer class="dock" id="dock"><button type="button" class="primary glass tinted" id="primary"></button></footer>
+  <footer class="dock" id="dock">
+    <button type="button" class="primary glass tinted" id="primary"></button>
+    <nav class="tabbar glass" id="tabbar" hidden>
+      <button type="button" data-tab="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.5l2.2 11h10.6l2-8H6.6"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>購物車</button>
+      <button type="button" data-tab="chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>圖表</button>
+      <button type="button" data-tab="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>搜尋</button>
+      <button type="button" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg>設定</button>
+    </nav>
+  </footer>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite">
@@ -690,7 +761,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* ---------- 資料 ---------- */
   /* 全部資料存成一包：{v:版本, start:起始金額, cats:類別, recs:紀錄}。改結構時看 v 決定怎麼搬。 */
   var KEY='ledger-data';
-  var VERSION=11;
+  var VERSION=12;
   /* 類別：大類（有圖示和顏色）底下有小類（有圖示），小類底下可以再分一層。
      薪資 → 教學 → 比賽班…；薪資 → 接案 → code/model/pcb（和課堂薪水的內容 id 一樣，之後匯入對得上）。 */
   var DEFAULT_CATS=[
@@ -734,7 +805,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       at:建立時間, upd:最後修改時間} */
 
   var clone=function(o){return JSON.parse(JSON.stringify(o))};
-  function fresh(){return {v:VERSION,start:null,cats:clone(DEFAULT_CATS),recs:[]}}
+  function fresh(){return {v:VERSION,start:null,cats:clone(DEFAULT_CATS),recs:[],cart:[]}}
   function migrate(d){
     /* v1（第一版，只有一層類別、沒有起始金額）→ v2 */
     if(d&&d.v===1&&Array.isArray(d.recs)){
@@ -809,6 +880,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(d&&d.v===10&&Array.isArray(d.recs)){
       d={v:11,start:d.start==null?null:d.start,cats:clone(DEFAULT_CATS),recs:d.recs};
     }
+    /* v11 → v12：多「購物車」（想買的東西：{id,name,amt,cat,sub,sub2,note,at}） */
+    if(d&&d.v===11&&Array.isArray(d.recs)){
+      d={v:12,start:d.start==null?null:d.start,cats:d.cats&&d.cats.length?d.cats:clone(DEFAULT_CATS),recs:d.recs,cart:[]};
+    }
     return d;
   }
   function load(){
@@ -817,7 +892,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(raw==null)return fresh();
     try{
       var d=migrate(JSON.parse(raw));
-      if(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs))return d;
+      if(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs)){if(!Array.isArray(d.cart))d.cart=[];return d}
     }catch(e){}
     /* 讀不懂的資料不要直接蓋掉，先另外存一份，之後還救得回來 */
     try{localStorage.setItem(KEY+'-broken-'+Date.now(),raw)}catch(e){}
@@ -958,7 +1033,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   };
 
   /* ---------- 狀態 ---------- */
-  var current=1;
+  var current=1,detailFrom=1,cartEdit=null;  /* detailFrom：明細頁從哪一頁點進來（返回回那頁）；cartEdit：購物車表單正在改的那項 */
   /* 這一輪記帳：mode 是 new（記新的）、edit（修改 rec）、start（填起始金額） */
   var flow={mode:'new',kind:'in',amt:'',big:null,rec:null};
   var detail=null;   /* 明細頁在看哪一筆 */
@@ -1004,7 +1079,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       if(r.note&&r.src!=='classpay')main.appendChild(el('small','rec-note',r.note));
       b.appendChild(main);
       b.appendChild(el('span','amt-'+r.kind,signed(r)));
-      b.addEventListener('click',function(){buzz.tap();detail=r;show(5)});
+      b.addEventListener('click',function(){buzz.tap();detail=r;detailFrom=1;show(5)});
       li.appendChild(b);ul.appendChild(li);
     });
     freshId=null;
@@ -1409,6 +1484,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   }
   function toNote(sub,sub2){
     flow.pick={sub:sub,sub2:sub2};
+    if(flow.mode==='cart'){  /* 購物車選類別：選好就回表單 */
+      buzz.tap();cartEdit.cat=flow.big.id;cartEdit.sub=sub?sub.id:null;cartEdit.sub2=sub2?sub2.id:null;
+      show(10,true);return;
+    }
     if(flow.mode==='edit'){finish();return}  /* 修改類別：選好就存 */
     buzz.tap();show(8);
   }
@@ -1516,7 +1595,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     db.recs.splice(i,1);
     if(!save()){db.recs.splice(i,0,r);return}
     var n=recName(r);
-    buzz.tap('MEDIUM');show(1,true);
+    buzz.tap('MEDIUM');show(detailFrom||1,true);
     toast('已刪除 '+n.full+' '+signed(r)+' 元',function(){
       db.recs.push(r);save();freshId=r.id;if(current===1)paintHome();
     });
@@ -1525,9 +1604,13 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* ---------- 換頁、標題列、底部按鈕 ---------- */
   function paintDock(){
     var p=$('primary');
-    $('dock').hidden=current!==1&&current!==8;
+    var PLUS='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3v14 M3 10h14"/></svg>';
+    $('dock').hidden=[1,8,9,10].indexOf(current)<0;
+    $('tabbar').hidden=current!==1;
     if(current===8)p.textContent=flow.mode==='edit'?'儲存':'存好';
-    if(current===1)p.innerHTML='<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M10 3v14 M3 10h14"/></svg>記帳';
+    if(current===1)p.innerHTML=PLUS+'記帳';
+    if(current===9)p.innerHTML=PLUS+'新增想買的';
+    if(current===10)p.textContent='存好';
     /* 輸入金額頁的「下一步」在右上角 */
     var nx=$('navNext');
     nx.hidden=current!==2;
@@ -1554,6 +1637,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       GLASS.addListener('tap',function(e){
         var id=e&&e.id;
         if(id==='seg-in'||id==='seg-out'){$('kindSeg').querySelector('[data-v="'+id.slice(4)+'"]').click();return}
+        if(id&&id.indexOf('tab-')===0){openTab(id.slice(4));return}
         var b=$({back:'navBack',next:'navNext',primary:'primary',more:'moreBtn'}[id]);
         if(b&&!b.disabled)b.click();
       });
@@ -1566,8 +1650,9 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var st={
       back:nav?{label:$('backLabel').textContent,chevron:$('backChev').style.display!=='none'}:null,
       next:nav&&!nx.hidden?{label:nx.textContent,enabled:!nx.disabled}:null,
-      primary:$('dock').hidden?null:{label:current===1?'記帳':$('primary').textContent,plus:current===1},
-      more:current===1,
+      primary:$('dock').hidden?null:{label:$('primary').textContent,plus:current===1||current===9},
+      more:false,
+      tabs:current===1,
       seg:null
     };
     /* 收入｜支出：原生那顆疊在網頁那顆的最後位置上。換頁動畫還在跑時，扣掉動畫的位移，
@@ -1590,8 +1675,9 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('backChev').style.display=cancel?'none':'';
     var pk=flow.pick||{};
     var ed=flow.mode==='edit';
-    $('backLabel').textContent=cancel?'取消':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'資料與備份':current===7?'統計':current===8?'備註':'明細';
+    var cm=flow.mode==='cart';
+    $('backLabel').textContent=cancel?'取消':cm&&current===3?'想買的':current===10?'購物車':current===5&&detailFrom===11?'搜尋':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('navTitle').textContent=current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'設定':current===7?'統計':current===8?'備註':current===9?'購物車':current===10?(cartEdit&&cartEdit.id?'修改想買的':'新增想買的'):current===11?'搜尋':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -1607,19 +1693,29 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     else if(n===5)paintDetail();
     else if(n===6)paintData();
     else if(n===8)paintNote();
+    else if(n===9)paintCart();
+    else if(n===10)paintCartForm();
+    else if(n===11)paintSearch();
     else paintStats();
     paintNav();paintDock();
   }
   $('scroll').addEventListener('scroll',function(){$('nav').classList.toggle('lined',this.scrollTop>2)},{passive:true});
-  $('primary').addEventListener('click',function(){if(current===8)finish();else startFlow('new')});
+  $('primary').addEventListener('click',function(){
+    if(current===8)finish();
+    else if(current===9)openCartForm(null);
+    else if(current===10)saveCartForm();
+    else startFlow('new');
+  });
   $('navNext').addEventListener('click',next);
   function goBack(){
     buzz.tap();
     if(current===2)show(flow.mode==='edit'?5:1,true);
-    else if(current===3)show(flow.mode==='edit'?5:2,true);
+    else if(current===3)show(flow.mode==='edit'?5:flow.mode==='cart'?10:2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
     else if(current===8&&flow.mode==='edit')show(5,true);
     else if(current===8){var p=flow.pick;if(p.sub2){flow.sub=p.sub;show(4,true)}else if(p.sub){flow.sub=null;show(4,true)}else show(3,true)}
+    else if(current===10)show(9,true);
+    else if(current===5)show(detailFrom||1,true);
     else if(current>=5&&current!==8)show(1,true);
   }
   $('navBack').addEventListener('click',goBack);
@@ -2047,6 +2143,139 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       :'CSV 可以用 Excel 或 Numbers 打開，支出是負數。';
   }
   $('moreBtn').addEventListener('click',function(){buzz.tap();show(6)});
+
+  /* ---------- 主頁底部的分頁列 ---------- */
+  function openTab(t){
+    if(t==='chart'){$('homeChart').click();return}  /* 跟點主頁圓餅圖一樣，從「全部」開始 */
+    buzz.tap();
+    if(t==='cart')show(9);
+    else if(t==='search'){searchQ='';show(11)}
+    else if(t==='settings')show(6);
+  }
+  $('tabbar').addEventListener('click',function(e){var b=e.target.closest('button');if(b)openTab(b.dataset.tab)});
+
+  /* ---------- 購物車 ---------- */
+  /* db.cart：想買的東西 {id,name,amt,cat,sub,sub2,note,at}，加進來時就選好類別（都是支出）。
+     按「加入」→ 記成今天的一筆支出（備註＝品名＋備註，src:'cart'），從購物車拿掉，可以復原。 */
+  function catLabel(c){
+    var b=bigById(c.cat),s1=findSub(b.subs,c.sub),s2=s1&&findSub(s1.subs,c.sub2);
+    return [b.name,s1&&s1.name,s2&&s2.name].filter(Boolean).join('・');
+  }
+  function paintCart(){
+    var list=db.cart,ul=$('cartList');ul.textContent='';
+    var sum=list.reduce(function(a,c){return a+c.amt},0);
+    $('cartSum').innerHTML='';
+    if(list.length){$('cartSum').appendChild(el('span',null,list.length+' 樣，全部買下來要'));$('cartSum').appendChild(el('b',null,fmt(sum)+' 元'))}
+    $('cartBox').hidden=$('cartFoot').hidden=!list.length;$('cartEmpty').hidden=!!list.length;
+    list.forEach(function(c){
+      var li=el('li'),row=el('div','cart-row');
+      var info=el('button','ci');info.type='button';
+      info.appendChild(ico(bigById(c.cat)));
+      var t=el('span');t.appendChild(el('b',null,c.name));t.appendChild(el('small',null,catLabel(c)+(c.note?'・'+c.note:'')));
+      info.appendChild(t);
+      info.addEventListener('click',function(){buzz.tap();openCartForm(c)});
+      row.appendChild(info);
+      row.appendChild(el('span','ca',fmt(c.amt)));
+      var add=el('button','cart-add','加入');add.type='button';
+      add.addEventListener('click',function(){buyCart(c)});
+      row.appendChild(add);
+      li.appendChild(row);ul.appendChild(li);
+    });
+  }
+  function buyCart(c){
+    var i=db.cart.indexOf(c);if(i<0)return;
+    var now=Date.now();
+    var rec={id:newId(),kind:'out',amt:c.amt,cat:c.cat,sub:c.sub||null,sub2:c.sub2||null,date:today(),note:c.name+(c.note?' '+c.note:''),proj:null,src:'cart',ref:null,at:now,upd:now};
+    db.cart.splice(i,1);db.recs.push(rec);
+    if(!save()){db.recs.pop();db.cart.splice(i,0,c);return}
+    buzz.note('SUCCESS');paintCart();
+    toast('已記帳 '+c.name+' −'+fmt(c.amt)+' 元',function(){
+      db.recs=db.recs.filter(function(x){return x.id!==rec.id});db.cart.splice(Math.min(i,db.cart.length),0,c);save();
+      if(current===9)paintCart();else if(current===1)paintHome();
+    });
+  }
+  function openCartForm(c){
+    cartEdit=c?{id:c.id,name:c.name,amt:c.amt,cat:c.cat,sub:c.sub,sub2:c.sub2,note:c.note||''}:{id:null,name:'',amt:0,cat:null,sub:null,sub2:null,note:''};
+    buzz.tap();show(10);
+  }
+  function paintCartForm(){
+    var e=cartEdit;
+    $('cfName').value=e.name;$('cfAmt').value=e.amt?String(e.amt):'';$('cfNote').value=e.note;
+    var n=$('cfCatName');n.textContent=e.cat?catLabel(e):'選擇類別';n.classList.toggle('ph',!e.cat);
+    $('cfDelBox').hidden=!e.id;
+    document.querySelector('#s10 .form').className='group form';
+  }
+  $('cfName').addEventListener('input',function(){cartEdit.name=this.value});
+  $('cfAmt').addEventListener('input',function(){var v=this.value.replace(/\D/g,'').replace(/^0+/,'').slice(0,9);if(v!==this.value)this.value=v;cartEdit.amt=parseInt(v,10)||0});
+  $('cfNote').addEventListener('input',function(){cartEdit.note=this.value});
+  $('cfName').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('cfAmt').focus()}});
+  $('cfNote').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();this.blur()}});
+  $('cfCat').addEventListener('click',function(){
+    buzz.tap();
+    flow={mode:'cart',kind:'out',amt:String(cartEdit.amt||0),big:null,rec:null,note:'',only:null};
+    show(3);
+  });
+  function saveCartForm(){
+    var e=cartEdit,form=document.querySelector('#s10 .form');
+    var name=(e.name||'').trim(),bad=!name?'bad-name':!(e.amt>0)?'bad-amt':!e.cat?'bad-cat':'';
+    if(bad){
+      form.className='group form '+bad;form.classList.remove('shake');void form.offsetWidth;form.classList.add('shake');
+      buzz.note('WARNING');toast(bad==='bad-name'?'寫一下想買什麼':bad==='bad-amt'?'金額要大於 0':'選一下類別');return;
+    }
+    var item={id:e.id||newId(),name:name,amt:e.amt,cat:e.cat,sub:e.sub,sub2:e.sub2,note:(e.note||'').trim(),at:Date.now()};
+    var i=db.cart.findIndex(function(x){return x.id===item.id});
+    var before=i>=0?db.cart[i]:null;
+    if(i>=0)db.cart[i]=item;else db.cart.unshift(item);
+    if(!save()){if(before)db.cart[i]=before;else db.cart.shift();return}
+    buzz.note('SUCCESS');show(9,true);toast((before?'已修改 ':'已加進購物車 ')+name);
+  }
+  $('cfDel').addEventListener('click',function(){
+    var i=db.cart.findIndex(function(x){return x.id===cartEdit.id});if(i<0)return;
+    var c=db.cart.splice(i,1)[0];
+    if(!save()){db.cart.splice(i,0,c);return}
+    buzz.tap('MEDIUM');show(9,true);
+    toast('已刪除 '+c.name,function(){db.cart.splice(i,0,c);save();if(current===9)paintCart()});
+  });
+
+  /* ---------- 搜尋 ---------- */
+  /* 比對：大類／小類／細項名稱、備註、金額（打數字找一樣的金額，或金額裡有這串數字）、日期（像 10/14、10月、2026-10）。
+     空白分開的每個字都要對到才算。結果照日期分組，跟主頁清單一樣。 */
+  var searchQ='';
+  function recText(r){
+    var n=recName(r),d=r.date.split('-');
+    return [n.full,r.note||'',r.kind==='in'?'收入':'支出',r.date,(+d[1])+'/'+(+d[2]),(+d[1])+'月'+(+d[2])+'日',(+d[1])+'月',r.src==='classpay'?'課堂薪水':''].join(' ').toLowerCase();
+  }
+  function paintSearch(){
+    var inp=$('searchIn');if(inp.value!==searchQ)inp.value=searchQ;
+    var q=searchQ.trim().toLowerCase(),box=$('searchList');box.textContent='';
+    if(!q){$('searchFoot').textContent='共 '+db.recs.length+' 筆紀錄';return}
+    var words=q.split(/\s+/);
+    var hit=db.recs.filter(function(r){
+      var t=recText(r);
+      return words.every(function(w){return /^\d+$/.test(w)?(String(r.amt).indexOf(w)>=0||t.indexOf(w)>=0):t.indexOf(w)>=0});
+    }).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
+    var tin=0,tout=0;hit.forEach(function(r){if(r.kind==='in')tin+=r.amt;else tout+=r.amt});
+    $('searchFoot').textContent=hit.length?'找到 '+hit.length+' 筆'+(tout?'，支出 '+fmt(tout)+' 元':'')+(tin?'，收入 '+fmt(tin)+' 元':''):'找不到符合的紀錄';
+    var ul=null,last=null;
+    hit.slice(0,300).forEach(function(r){
+      if(r.date!==last){
+        last=r.date;
+        box.appendChild(el('div','head',dayText(r.date)));
+        var g=el('div','group');g.style.marginTop='0';ul=el('ul','list');g.appendChild(ul);box.appendChild(g);
+      }
+      var big=bigById(r.cat),n=recName(r),li=el('li'),b=el('button','rec');b.type='button';
+      b.appendChild(ico(big));
+      var main=el('span','rec-main',n.big);
+      if(n.rest)main.appendChild(el('span',null,'・'+n.rest));
+      if(r.note&&r.src!=='classpay')main.appendChild(el('small','rec-note',r.note));
+      b.appendChild(main);
+      b.appendChild(el('span','amt-'+r.kind,signed(r)));
+      b.addEventListener('click',function(){buzz.tap();detail=r;detailFrom=11;show(5)});
+      li.appendChild(b);ul.appendChild(li);
+    });
+  }
+  $('searchIn').addEventListener('input',function(){searchQ=this.value;paintSearch()});
+  $('searchIn').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();this.blur()}});
 
   /* ---------- 從課堂薪水匯入 ---------- */
   /* 課堂薪水每次存紀錄就把全部紀錄寫到共用儲存區的 class-pay-records.json：

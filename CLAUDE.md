@@ -194,6 +194,10 @@
 - **真的 Apple 玻璃（2026-10-14，使用者手機是 iOS 26、要「Apple 的玻璃」，選「底部按鈕＋上方按鈕」）**：`AppDelegate.swift` 加原生外掛 `GlassBar`（`info()`→`{glass}`、`set({back:{label,chevron},next:{label,enabled},primary:{label,plus},more})`、按下送 `tap` 事件 `{id}`），用 iOS 26 的 `UIButton.Configuration.glass()`／`.prominentGlass()`（藍色）疊在網頁上面：返回（左上）、下一步（右上）、⋯（主頁右上，固定不跟著捲）、底部記帳／存好（跟著鍵盤往上，`keyboardLayoutGuide`）。網頁 `syncGlass()` 在 `paintDock()` 最後把目前狀態傳過去（沒變就不傳），`body.native-glass` 時網頁自己的那幾顆 `visibility:hidden`、提示泡泡往下移 62px 免得被擋。iOS 26 以前或網頁版照舊用網頁畫的玻璃。打包用 Xcode 26.6（macos-26 runner）。使用者更新 v1.0.21 後說「收入支出」也要真的 → 輸入金額頁的「收入｜支出」換成原生 `UISegmentedControl`（`set` 多 `seg:{x,y,w,h,value}`，網頁量 `#kindSeg` 的位置傳過去，換頁動畫還在跑時扣掉動畫的位移（DOMMatrix），一進頁面就放原生的，2026-10-21 使用者說「記帳時會有一瞬間的假玻璃」才改的；按下送 `seg-in`／`seg-out`；左緣拖動時先藏起來；`body.native-seg` 時網頁那顆 `visibility:hidden`）。統計頁的月／年／全部會捲動，沒換。
 - **沒有原生玻璃時不用玻璃（2026-10-21 使用者要的）**：iOS 26 以前和網頁版（`body` 沒有 `native-glass`）用 `body:not(.native-glass) …` 蓋回一般 iPhone 樣子：返回／下一步是藍字、底部是實心藍色圓角按鈕＋實心底色和上緣細線、⋯ 是灰底圓、提示泡泡實心白、切換鈕傳統樣式、往下捲標題列變實心加細線。iOS 26 上提示泡泡和統計頁的切換還是用模擬玻璃。
 - 上方提示泡泡可以**往上滑掉**（2026-10-21 使用者要的）：跟著手指走，往上超過 24px 或快速一甩就收起來，不夠就彈回、重新計時 2.5 秒；往下拉有阻力。
+- **主頁底部分頁列＋購物車、搜尋（2026-11-09 使用者要的）**：「記帳」往上移，下面一條分頁列（使用者選「一條分頁列」）四格：購物車、圖表、搜尋、設定（第四格使用者選搜尋）。右上「⋯」拿掉（`#moreBtn` hidden、原生 more:false），「設定」就是原本的資料與備份頁（第 6 頁，標題改「設定」）。圖表＝點主頁圓餅圖（`openTab('chart')` 直接 click `#homeChart`）。
+  - iOS 26：原生 `GlassBar` 多 `tabs` 參數，`UIVisualEffectView(effect: UIGlassEffect())` 裡放四個 plain 按鈕（SF Symbols cart／chart.pie／magnifyingglass／gearshape，圖示在上），按下送 `tab-<id>`；主頁時底部按鈕的約束從「鍵盤上面 14」換成「分頁列上面 10」（`primaryToKeyboard`／`primaryToTabs`）。網頁的分頁列 `#tabbar` 在 `.dock` 裡，`native-glass` 時 visibility:hidden；沒原生玻璃時是一般 iPhone 分頁列（灰字、上緣細線）。主頁有分頁列時捲動區底部留 166px。
+  - **購物車**（第 9 頁清單、第 10 頁新增／修改表單）：`db.cart`（資料 v12）每項 `{id,name,amt,cat,sub,sub2,note,at}`，使用者選「加進購物車時就選類別」（只有支出；表單點「類別」走同一套選類別頁，`flow.mode='cart'`，選到最後一層就回表單）。清單上面「N 樣，全部買下來要 X 元」，每列：圖示、品名、類別・備註、金額、「加入」。按「加入」→ 記成今天的支出（備註＝品名＋備註，`src:'cart'`），從購物車拿掉，提示可復原。點一列修改，表單底下可刪除（可復原）。沒填品名／金額／類別會抖一下＋提示。
+  - **搜尋**（第 11 頁）：比對大類／小類／細項名稱、備註、收入／支出、日期（10/14、10月14日、2026-10-14、10月）、金額（打數字找金額含這串數字）；空白分開的每個字都要對到。結果照日期分組，上面寫「找到 N 筆，支出 X、收入 Y」。點結果進明細，返回回搜尋（`detailFrom`）。
 - 換頁有左緣滑回；震動照常（按鍵、存好 SUCCESS、金額 0 按下一步 WARNING）。
 - 分類（目前的大綱，2026-10-10 整理過；階段 4 可自己改）。規則：大類照「錢花在生活的哪一塊」分；第三層只用在教學／接案收入、零件及工具、會長期保養的東西（3C、嗜好），而且照實際會買的東西分，不硬套同一組；其他一律兩層。
   - 支出（9 個，順序：生活開銷 → 工作成本 → 長期保養的東西 → 其他）：
@@ -215,7 +219,7 @@
     - 其他：中獎、二手賣出、雜項
 - 分工：程式由 Claude 寫並解釋重點，使用者測試、回報手感。
 
-資料結構（localStorage key `ledger-data`，目前 **v:11**）：`{v:11, start:起始金額或null, cats:[{id,kind,name,icon,color,subs:[{id,name,icon?,subs?}]}], recs:[…]}`；每筆 `{id, kind:'in'|'out', amt, cat:大類id, sub:小類id, sub2:第三層id或null, date:'YYYY-MM-DD', note, proj:null, src:'manual', ref:null, at, upd}`。舊版載入時會自動一路搬到最新版（v1 一層類別 → v2 舊收入分類 → v3 教學／接案是大類 → v4 併進薪資、投資理財歸其他・雜項 → v5 薪資變三層 → v6 小類加圖示 → v7 第三層加圖示 → v8 新增 3C 數位、嗜好 → v9 支出大綱重整 → v10 教課接案改名零件及工具 → v11 其他多「存錢」）。在階段 4 能自己改類別之前，每次改預設類別都升版號、把 cats 換成新的預設即可；之後就不能直接蓋掉使用者改過的類別了。
+資料結構（localStorage key `ledger-data`，目前 **v:12**）：`{v:12, start:起始金額或null, cats:[{id,kind,name,icon,color,subs:[{id,name,icon?,subs?}]}], recs:[…]}`；每筆 `{id, kind:'in'|'out', amt, cat:大類id, sub:小類id, sub2:第三層id或null, date:'YYYY-MM-DD', note, proj:null, src:'manual', ref:null, at, upd}`。舊版載入時會自動一路搬到最新版（v1 一層類別 → v2 舊收入分類 → v3 教學／接案是大類 → v4 併進薪資、投資理財歸其他・雜項 → v5 薪資變三層 → v6 小類加圖示 → v7 第三層加圖示 → v8 新增 3C 數位、嗜好 → v9 支出大綱重整 → v10 教課接案改名零件及工具 → v11 其他多「存錢」 → v12 多 `cart:[]` 購物車）。在階段 4 能自己改類別之前，每次改預設類別都升版號、把 cats 換成新的預設即可；之後就不能直接蓋掉使用者改過的類別了。
 階段 7 對應：課堂薪水的教學 → `salary/teach/(contest|advanced|regular|other)` 其中一個（課堂薪水沒有班別資訊，匯入時歸哪個要再問使用者）；`code／model／pcb` → `salary/gig/` 的同名細項。讀不懂的舊資料會先另存到 `ledger-data-broken-時間`，不直接蓋掉。
 
 注意：Claude 的瀏覽器面板直接開本機檔案時不能用 localStorage，要開本機伺服器才能測。使用者自己用 Chrome／Edge 直接開檔案沒有這個問題。
