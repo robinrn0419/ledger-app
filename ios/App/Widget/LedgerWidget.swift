@@ -2,12 +2,13 @@ import WidgetKit
 import SwiftUI
 import UIKit
 
-/* 記一筆的桌面小工具（小方塊）：財產總額＋主頁那句話。
-   資料是 App 寫在共用儲存區的 widget.json：{total, mood, lv}。App 每次畫主頁、內容有變就寫一次，
+/* 記一筆的桌面小工具（小方塊）：可支配（最大）＋全部的錢＋主頁那句話。
+   資料是 App 寫在共用儲存區的 widget.json：{total(可支配), all(全部，含存錢筒), mood, lv}。App 每次畫主頁、內容有變就寫一次，
    原生那邊寫完會叫小工具重畫，所以這裡不用定時更新。 */
 
 struct LedgerData: Decodable {
     var total: Int
+    var all: Int?
     var mood: String
     var lv: String
 }
@@ -50,7 +51,7 @@ struct Entry: TimelineEntry {
 }
 
 struct Provider: TimelineProvider {
-    static let sample = LedgerData(total: 52300, mood: "這個月很穩", lv: "good")
+    static let sample = LedgerData(total: 42300, all: 52300, mood: "這個月很穩", lv: "good")
 
     func placeholder(in context: Context) -> Entry { Entry(date: .now, data: Provider.sample) }
 
@@ -90,21 +91,29 @@ struct LedgerWidgetView: View {
 
     var body: some View {
         /* 字盡量大、放不下才縮；三行靠在一起、整組上下置中（使用者說原本中間空太多、偏一邊）。邊距用系統預設。 */
-        VStack(alignment: .leading, spacing: 4) {
-            Text("財產總額")
+        VStack(alignment: .leading, spacing: 3) {
+            Text("可支配")
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.secondary)
             if let d = entry.data {
                 Text(LedgerWidgetView.money(d.total))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
+                if let all = d.all {
+                    Text("全部 " + LedgerWidgetView.money(all))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
                 if !d.mood.isEmpty {
                     Text(d.mood)
                         .font(.system(size: 17, weight: .semibold))  // 比數字低調，數字才是主角
                         .foregroundStyle(LedgerWidgetView.color(d.lv))
-                        .lineLimit(3)
+                        .lineLimit(2)
                         .minimumScaleFactor(0.6)
                 }
             } else {

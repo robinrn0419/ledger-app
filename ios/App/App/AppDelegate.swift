@@ -146,7 +146,7 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin, UITabBarDelegate {
     private var buttons: [String: UIButton] = [:]
     private var seg: UISegmentedControl?
     private var tabBar: UITabBar?
-    private let tabIds = ["home", "cart", "chart", "settings"]
+    private let tabIds = ["home", "cart", "jar", "settings"]
     private var primaryToKeyboard: NSLayoutConstraint?
     private var primaryToTabs: NSLayoutConstraint?
 
@@ -239,8 +239,8 @@ public class GlassBarPlugin: CAPPlugin, CAPBridgedPlugin, UITabBarDelegate {
         bar.delegate = self
         bar.alpha = 0
         bar.isHidden = true
-        let icons = ["house", "cart", "chart.pie", "gearshape"]
-        let names = ["主頁", "購物車", "圖表", "設定"]
+        let icons = ["house", "cart", "banknote", "gearshape"]
+        let names = ["主頁", "購物車", "存錢筒", "設定"]
         bar.items = icons.enumerated().map { i, name in
             let item = UITabBarItem(title: nil, image: UIImage(systemName: name), selectedImage: UIImage(systemName: name + ".fill"))
             item.tag = i
@@ -467,13 +467,16 @@ struct AddRecordIntent: AppIntent {
         let amt = Double(amount)
         let mk = SiriBox.dateText("yyyy-MM")
         if (info["mk"] as? String) != mk { info["mk"] = mk; info["mIn"] = 0; info["mOut"] = 0; info["mSave"] = 0 }
+        /* total 是可支配，all 是全部的錢（含存錢筒），兩個一起加減 */
         let total = SiriBox.num(info["total"]) + (kind == "in" ? amt : -amt)
         info["total"] = total
+        if info["all"] != nil { info["all"] = SiriBox.num(info["all"]) + (kind == "in" ? amt : -amt) }
         if kind == "in" { info["mIn"] = SiriBox.num(info["mIn"]) + amt } else { info["mOut"] = SiriBox.num(info["mOut"]) + amt }
         if cat == "out-other" && (sub as? String) == "saving" { info["mSave"] = SiriBox.num(info["mSave"]) + amt }
         SiriBox.write("siri.json", info)
         if var w = SiriBox.read("widget.json") as? [String: Any] {
             w["total"] = Int(total.rounded())
+            if w["all"] != nil { w["all"] = Int((SiriBox.num(w["all"]) + (kind == "in" ? amt : -amt)).rounded()) }
             SiriBox.write("widget.json", w)
             WidgetCenter.shared.reloadAllTimelines()
         }
@@ -481,7 +484,7 @@ struct AddRecordIntent: AppIntent {
         let sign = kind == "in" ? "收入" : "支出"
         var say = "已記下\(sign)：\(label) \(SiriBox.money(amt)) 元"
         if !note.isEmpty { say = "沒有「\(spoken)」這個類別，先記在其他・雜項 \(SiriBox.money(amt)) 元，備註寫\(spoken)" }
-        return .result(dialog: SiriBox.say(say + "。現在有 \(SiriBox.money(total)) 元"))
+        return .result(dialog: SiriBox.say(say + "。可支配還有 \(SiriBox.money(total)) 元"))
     }
 }
 
@@ -499,7 +502,10 @@ struct TotalIntent: AppIntent {
         guard let info = SiriBox.read("siri.json") as? [String: Any] else {
             return .result(dialog: SiriBox.say("請先打開一次記一筆"))
         }
-        var say = "你現在有 \(SiriBox.money(SiriBox.num(info["total"]))) 元"
+        var say = "可支配還有 \(SiriBox.money(SiriBox.num(info["total"]))) 元"
+        if info["all"] != nil, SiriBox.num(info["all"]) != SiriBox.num(info["total"]) {
+            say += "，加上存錢筒全部共 \(SiriBox.money(SiriBox.num(info["all"]))) 元"
+        }
         if let mood = info["mood"] as? String, !mood.isEmpty { say += "。\(mood)" }
         return .result(dialog: SiriBox.say(say))
     }
