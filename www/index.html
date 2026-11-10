@@ -195,6 +195,7 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .amt-in,.amt-out{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .amt-in{color:var(--in)}
 .amt-out{color:var(--out)}
+.amt-jar{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--sec)}
 .rec.fresh{animation:fresh 1.6s var(--ease)}
 @keyframes fresh{0%,35%{background:var(--press)}100%{background:var(--card)}}
 .empty{margin:48px 24px 0;text-align:center;color:var(--sec);font-size:15px;line-height:1.6}
@@ -838,7 +839,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* ---------- 資料 ---------- */
   /* 全部資料存成一包：{v:版本, start:起始金額, cats:類別, recs:紀錄}。改結構時看 v 決定怎麼搬。 */
   var KEY='ledger-data';
-  var VERSION=13;
+  var VERSION=14;
   /* 類別：大類（有圖示和顏色）底下有小類（有圖示），小類底下可以再分一層。
      薪資 → 教學 → 比賽班…；薪資 → 接案 → code/model/pcb（和課堂薪水的內容 id 一樣，之後匯入對得上）。 */
   var DEFAULT_CATS=[
@@ -882,7 +883,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       at:建立時間, upd:最後修改時間} */
 
   var clone=function(o){return JSON.parse(JSON.stringify(o))};
-  function fresh(){return {v:VERSION,start:null,cats:clone(DEFAULT_CATS),recs:[],cart:[],jars:[]}}
+  function fresh(){return {v:VERSION,start:null,cats:clone(DEFAULT_CATS),recs:[],cart:[],jars:[],jarLog:[]}}
   function migrate(d){
     /* v1（第一版，只有一層類別、沒有起始金額）→ v2 */
     if(d&&d.v===1&&Array.isArray(d.recs)){
@@ -963,6 +964,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     }
     /* v12 → v13：多「存錢筒」（{id,name,goal,saved,cartId,month,days,daysAmt,income,lastMonth,lastDay,at}） */
     if(d&&d.v===12&&Array.isArray(d.recs)){d.v=13;d.jars=[]}
+    /* v13 → v14：存錢筒的每一筆進出（{id,jar,name,amt(正＝存進去、負＝拿出來),type,note,date,at}），顯示在主頁清單 */
+    if(d&&d.v===13&&Array.isArray(d.recs)){d.v=14;d.jarLog=[]}
     return d;
   }
   function load(){
@@ -971,7 +974,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(raw==null)return fresh();
     try{
       var d=migrate(JSON.parse(raw));
-      if(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs)){if(!Array.isArray(d.cart))d.cart=[];if(!Array.isArray(d.jars))d.jars=[];return d}
+      if(d&&d.v===VERSION&&Array.isArray(d.cats)&&Array.isArray(d.recs)){if(!Array.isArray(d.cart))d.cart=[];if(!Array.isArray(d.jars))d.jars=[];if(!Array.isArray(d.jarLog))d.jarLog=[];return d}
     }catch(e){}
     /* 讀不懂的資料不要直接蓋掉，先另外存一份，之後還救得回來 */
     try{localStorage.setItem(KEY+'-broken-'+Date.now(),raw)}catch(e){}
@@ -1121,6 +1124,18 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   /* ---------- 主頁 ---------- */
   /* 全部的錢＝起始＋收入−支出；存錢筒裡的錢還算在全部裡，但不算可支配 */
+  /* 主頁清單裡的存錢筒一列：小豬圖示、「存錢筒・名字」、做了什麼、金額（存＝進存錢筒、拿＝出來） */
+  function jarRow(x){
+    var li=el('li'),b=el('button','rec jar-rec');b.type='button';
+    b.appendChild(ico({color:'#C9739A',icon:'piggy'}));
+    var main=el('span','rec-main','存錢筒');
+    main.appendChild(el('span',null,'・'+x.name));
+    main.appendChild(el('small','rec-note',(JAR_TYPE[x.type]||'')+(x.note?'・'+x.note:'')));
+    b.appendChild(main);
+    b.appendChild(el('span','amt-jar',(x.amt>0?'存 ':'拿 ')+fmt(Math.abs(x.amt))));
+    b.addEventListener('click',function(){buzz.tap();show(12)});
+    li.appendChild(b);return li;
+  }
   function allMoney(){var t=db.start||0;db.recs.forEach(function(r){t+=r.kind==='in'?r.amt:-r.amt});return t}
   function jarSum(){return db.jars.reduce(function(a,j){return a+(j.saved||0)},0)}
   function spendable(){return allMoney()-jarSum()}
@@ -1150,7 +1165,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     pushWidget({total:Math.round(free),all:Math.round(all),mood:mb.hidden?'':mb.textContent,lv:mb.hidden?'':mb.dataset.lv});
     pushSiri({total:Math.round(free),all:Math.round(all),mood:mb.hidden?'':mb.textContent,mk:mk,mIn:min,mOut:mout,mSave:msave});
 
-    var rs=db.recs.slice().sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
+    /* 清單：一般紀錄＋存錢筒的進出，照日期排在一起（存錢筒那幾列不算收支，只是讓你看得到錢去哪了） */
+    var rs=db.recs.concat(db.jarLog).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
     var box=$('feed');box.textContent='';
     var ul=null,last=null;
@@ -1160,6 +1176,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         box.appendChild(el('div','head',dayText(r.date)));
         var g=el('div','group');g.style.marginTop='0';ul=el('ul','list');g.appendChild(ul);box.appendChild(g);
       }
+      if(r.jar){ul.appendChild(jarRow(r));return}
       var big=bigById(r.cat),n=recName(r),li=el('li'),b=el('button','rec'+(r.id===freshId?' fresh':''));b.type='button';
       b.appendChild(ico(big));
       var main=el('span','rec-main',n.big);
@@ -1631,14 +1648,14 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     }
     var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:note,proj:null,src:'manual',ref:null,at:now,upd:now};
     function commit(takes){
-      var jb=clone(db.jars);
-      applyTakes(takes);
+      var jb=snapJ();
+      applyTakes(takes,label);
       db.recs.push(rec);
       var got=rec.kind==='in'?jarIncome(rec.amt):0;
-      if(!save()){db.recs.pop();db.jars=jb;return}
+      if(!save()){db.recs.pop();restoreJ(jb);return}
       buzz.note('SUCCESS');freshId=rec.id;petReact(rec);show(1,true);
       toast('已加入 '+label+(got?'，存錢筒抽 '+fmt(got)+' 元':''),function(){
-        db.recs=db.recs.filter(function(x){return x.id!==rec.id});db.jars=jb;save();if(current===1)paintHome();
+        db.recs=db.recs.filter(function(x){return x.id!==rec.id});restoreJ(jb);save();if(current===1)paintHome();
       });
     }
     if(rec.kind==='out'&&askTake(amt,label,8,null,commit))return;
@@ -2323,14 +2340,18 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var now=Date.now(),jar=jarOfCart(c),use=jar?Math.min(jar.saved,c.amt):0;
     var rec={id:newId(),kind:'out',amt:c.amt,cat:c.cat,sub:c.sub||null,sub2:c.sub2||null,date:today(),note:c.name+(c.note?' '+c.note:''),proj:null,src:'cart',ref:null,at:now,upd:now};
     function commit(takes){
-      var jb=clone(db.jars);
-      if(jar)db.jars=db.jars.filter(function(j){return j.id!==jar.id});
-      applyTakes(takes);
+      var jb=snapJ();
+      if(jar){
+        jarLog(jar,-use,'buy',c.name);
+        if(jar.saved>use)jarLog(jar,-(jar.saved-use),'out','買完剩下的回到可支配');
+        db.jars=db.jars.filter(function(j){return j.id!==jar.id});
+      }
+      applyTakes(takes,c.name);
       db.cart.splice(i,1);db.recs.push(rec);
-      if(!save()){db.recs.pop();db.cart.splice(i,0,c);db.jars=jb;return}
+      if(!save()){db.recs.pop();db.cart.splice(i,0,c);restoreJ(jb);return}
       buzz.note('SUCCESS');show(9,true);
       toast('已記帳 '+c.name+' −'+fmt(c.amt)+' 元'+(use?'（存錢筒出 '+fmt(use)+'）':''),function(){
-        db.recs=db.recs.filter(function(x){return x.id!==rec.id});db.cart.splice(Math.min(i,db.cart.length),0,c);db.jars=jb;save();
+        db.recs=db.recs.filter(function(x){return x.id!==rec.id});db.cart.splice(Math.min(i,db.cart.length),0,c);restoreJ(jb);save();
         if(current===9)paintCart();else if(current===1)paintHome();
       });
     }
@@ -2387,6 +2408,14 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
      income(每次收入抽幾 %),lastMonth(月底規則處理到哪個月),lastDay(每幾天規則上次是哪天),at}。
      存錢筒裡的錢不是支出：全部的錢不變，只是不算在「可支配」裡。 */
   var jarEdit=null,take=null;
+  /* 存錢筒紀錄：amt 正的是存進去、負的是拿出來。type：in 存入、out 拿出、auto 自動存、income 收入抽成、take 拿去付、buy 買了、del 刪除 */
+  var JAR_TYPE={in:'存入',out:'拿出',auto:'自動存',income:'收入抽成',take:'拿去付',buy:'買了',del:'刪除'};
+  function jarLog(j,amt,type,note){
+    if(!amt)return;
+    db.jarLog.push({id:newId(),jar:j.id,name:j.name,amt:amt,type:type,note:note||'',date:today(),at:Date.now()});
+  }
+  function snapJ(){return {jars:clone(db.jars),log:db.jarLog.slice()}}
+  function restoreJ(x){db.jars=x.jars;db.jarLog=x.log}
   function monthKey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)}
   function shiftMonth(k,n){var y=+k.slice(0,4),m=+k.slice(5,7)-1+n;return monthKey(new Date(y,m,1))}
   function shiftDay(s,n){var p=s.split('-');return ymd(new Date(+p[0],+p[1]-1,+p[2]+n))}
@@ -2438,11 +2467,12 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       var a=$('amtBox');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
       buzz.note('WARNING');toast(into?'可支配只有 '+fmt(limit)+' 元':'裡面只有 '+fmt(limit)+' 元');return;
     }
-    j.saved+=into?n:-n;
-    if(!save()){j.saved-=into?n:-n;return}
+    var jb=snapJ();
+    j.saved+=into?n:-n;jarLog(j,into?n:-n,into?'in':'out');
+    if(!save()){restoreJ(jb);return}
     buzz.note('SUCCESS');show(from,true);
     toast((into?'已存進「':'已從「')+j.name+(into?'」 ':'」拿出 ')+fmt(n)+' 元',function(){
-      j.saved-=into?n:-n;save();if(current===12)paintJars();else if(current===9)paintCart();else if(current===1)paintHome();
+      restoreJ(jb);save();if(current===12)paintJars();else if(current===9)paintCart();else if(current===1)paintHome();
     });
   }
   function openJarForm(j){
@@ -2473,31 +2503,33 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       form.className='group form bad-name';form.classList.remove('shake');void form.offsetWidth;form.classList.add('shake');
       buzz.note('WARNING');toast('幫存錢筒取個名字');return;
     }
-    var jb=clone(db.jars),j=db.jars.filter(function(x){return x.id===e.id})[0];
+    var jb=snapJ(),j=db.jars.filter(function(x){return x.id===e.id})[0];
     if(!j){j=newJar(name,e.goal);j.cartId=e.cartId||null;db.jars.unshift(j)}
     /* 規則有改就從現在重新算起，不會一口氣補存以前的 */
     if(j.month!==e.month||(j.goal||0)!==e.goal)j.lastMonth=shiftMonth(monthKey(new Date()),-1);
     if(j.days!==e.days||j.daysAmt!==e.daysAmt)j.lastDay=today();
     j.name=name;j.goal=e.goal||null;j.month=e.goal?e.month:0;j.days=e.days;j.daysAmt=e.daysAmt;j.income=e.income;
-    if(!save()){db.jars=jb;return}
+    if(!save()){restoreJ(jb);return}
     buzz.note('SUCCESS');show(e.from||12,true);toast((e.id?'已修改「':'已新增「')+name+'」'+(e.from===9?'，再按一次「存錢」可以存第一筆':''));
   }
   $('jfDel').addEventListener('click',function(){
-    var jb=clone(db.jars),j=db.jars.filter(function(x){return x.id===jarEdit.id})[0];if(!j)return;
+    var jb=snapJ(),j=db.jars.filter(function(x){return x.id===jarEdit.id})[0];if(!j)return;
     db.jars=db.jars.filter(function(x){return x!==j});
-    if(!save()){db.jars=jb;return}
+    jarLog(j,-j.saved,'del','錢回到可支配');
+    if(!save()){restoreJ(jb);return}
     buzz.tap('MEDIUM');show(12,true);
-    toast('已刪除「'+j.name+'」'+(j.saved?'，'+fmt(j.saved)+' 元回到可支配':''),function(){db.jars=jb;save();if(current===12)paintJars()});
+    toast('已刪除「'+j.name+'」'+(j.saved?'，'+fmt(j.saved)+' 元回到可支配':''),function(){restoreJ(jb);save();if(current===12)paintJars()});
   });
 
   /* 自動存錢：打開 App、回到 App 時處理。可支配不夠的那次跳過；有目標的存滿就停。
      月底規則：每過一個月底存「目標 × 幾 %」；每幾天規則：從上次那天起每滿幾天存一筆。 */
   function runJarRules(){
     if(!db.jars.length)return;
-    var free=spendable(),mk=monthKey(new Date()),td=today(),n=0,sum=0,changed=false,jb=clone(db.jars);
+    var free=spendable(),mk=monthKey(new Date()),td=today(),n=0,sum=0,changed=false,jb=snapJ();
+    var got={};
     function put(j,a){
       a=jarRoom(j,a);
-      if(a>0&&free>=a){j.saved+=a;free-=a;n++;sum+=a}
+      if(a>0&&free>=a){j.saved+=a;free-=a;n++;sum+=a;got[j.id]=(got[j.id]||0)+a}
     }
     db.jars.forEach(function(j){
       var lm=j.lastMonth||shiftMonth(mk,-1),guard=0;
@@ -2514,7 +2546,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       if(ld!==j.lastDay){j.lastDay=ld;changed=true}
     });
     if(!changed&&!n)return;
-    if(!save()){db.jars=jb;return}
+    db.jars.forEach(function(j){if(got[j.id])jarLog(j,got[j.id],'auto',ruleText(j))});
+    if(!save()){restoreJ(jb);return}
     if(n){
       if(current===1)paintHome();else if(current===12)paintJars();else if(current===9)paintCart();
       toast('存錢筒自動存了 '+fmt(sum)+' 元');
@@ -2526,7 +2559,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     db.jars.forEach(function(j){
       if(!(j.income>0))return;
       var a=jarRoom(j,Math.round(amt*j.income/100));
-      if(a>0&&free>=a){j.saved+=a;free-=a;sum+=a}
+      if(a>0&&free>=a){j.saved+=a;free-=a;sum+=a;jarLog(j,a,'income','收入 '+fmt(amt)+' 元抽 '+j.income+'%')}
     });
     return sum;
   }
@@ -2583,8 +2616,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var t2=take,list=t2.jars.filter(function(j){return t2.vals[j.id]>0}).map(function(j){return {id:j.id,amt:t2.vals[j.id]}});
     t2.done(list);
   }
-  function applyTakes(list){
-    (list||[]).forEach(function(x){var j=db.jars.filter(function(y){return y.id===x.id})[0];if(j)j.saved=Math.max(0,j.saved-x.amt)});
+  function applyTakes(list,note){
+    (list||[]).forEach(function(x){var j=db.jars.filter(function(y){return y.id===x.id})[0];if(j){j.saved=Math.max(0,j.saved-x.amt);jarLog(j,-x.amt,'take',note)}});
   }
 
   /* ---------- 搜尋 ---------- */
