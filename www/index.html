@@ -728,7 +728,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <div class="cart-sum" id="cartSum"></div>
       <div class="group" id="cartBox"><ul class="list" id="cartList"></ul></div>
       <p class="empty" id="cartEmpty" hidden>還沒有想買的東西。<br>按下方「新增想買的」加一個。</p>
-      <p class="foot" id="cartFoot">「購買」記成今天的支出，東西從清單拿掉。「存錢」幫它開一個存錢筒慢慢存，存的錢買的時候會先用。點名字可以修改。</p>
+      <p class="foot" id="cartFoot">「購買」記成今天的支出，東西從清單拿掉。「存錢」幫它開一個存錢筒（可以設自動存錢），之後再按就是存一筆進去；存的錢買的時候會先用。點名字可以修改。</p>
     </section>
 
     <!-- 10 購物車：新增／修改一項 -->
@@ -1779,7 +1779,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var pk=flow.pick||{};
     var ed=flow.mode==='edit';
     var cm=flow.mode==='cart';
-    $('backLabel').textContent=cancel?'取消':cm&&current===3?'想買的':current===10?'購物車':current===13?'存錢筒':current===14?(take&&take.from===9?'購物車':'備註'):current===5&&detailFrom===11?'搜尋':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('backLabel').textContent=cancel?'取消':cm&&current===3?'想買的':current===10?'購物車':current===13?(jarEdit&&jarEdit.from===9?'購物車':'存錢筒'):current===14?(take&&take.from===9?'購物車':'備註'):current===5&&detailFrom===11?'搜尋':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
     $('navTitle').textContent=current===12?'存錢筒':current===13?(jarEdit&&jarEdit.id?'修改存錢筒':'新增存錢筒'):current===14?'可支配不夠':current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':flow.mode==='jar-in'?'存進存錢筒':flow.mode==='jar-out'?'從存錢筒拿出':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'設定':current===7?'統計':current===8?'備註':current===9?'購物車':current===10?(cartEdit&&cartEdit.id?'修改想買的':'新增想買的'):current===11?'搜尋':'明細';
   }
   function show(n,back){
@@ -1820,7 +1820,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(TOP[current])return;
     buzz.tap();
     if(current===2)show(flow.mode==='edit'?5:flow.from||1,true);
-    else if(current===13)show(12,true);
+    else if(current===13)show(jarEdit.from||12,true);
     else if(current===14)show(take.from,true);
     else if(current===3)show(flow.mode==='edit'?5:flow.mode==='cart'?10:2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
@@ -2311,10 +2311,9 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* 購物車按「存錢」：沒有存錢筒就幫它開一個（目標＝價錢），然後直接去輸入要存多少；購物車那項留著，多一條進度條 */
   function saveForCart(c){
     var jar=jarOfCart(c);
-    if(!jar){
-      jar=newJar(c.name,c.amt);jar.cartId=c.id;
-      db.jars.unshift(jar);
-      if(!save()){db.jars.shift();return}
+    if(!jar){  /* 第一次：先到存錢筒表單（名稱、目標已填好），可以順便設自動存錢 */
+      jarEdit={id:null,name:c.name,goal:c.amt,month:0,days:0,daysAmt:0,income:0,cartId:c.id,from:9};
+      buzz.tap();show(13);return;
     }
     openJarMove(jar,'jar-in',9);
   }
@@ -2475,13 +2474,13 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       buzz.note('WARNING');toast('幫存錢筒取個名字');return;
     }
     var jb=clone(db.jars),j=db.jars.filter(function(x){return x.id===e.id})[0];
-    if(!j){j=newJar(name,e.goal);db.jars.unshift(j)}
+    if(!j){j=newJar(name,e.goal);j.cartId=e.cartId||null;db.jars.unshift(j)}
     /* 規則有改就從現在重新算起，不會一口氣補存以前的 */
     if(j.month!==e.month||(j.goal||0)!==e.goal)j.lastMonth=shiftMonth(monthKey(new Date()),-1);
     if(j.days!==e.days||j.daysAmt!==e.daysAmt)j.lastDay=today();
     j.name=name;j.goal=e.goal||null;j.month=e.goal?e.month:0;j.days=e.days;j.daysAmt=e.daysAmt;j.income=e.income;
     if(!save()){db.jars=jb;return}
-    buzz.note('SUCCESS');show(12,true);toast((e.id?'已修改「':'已新增「')+name+'」');
+    buzz.note('SUCCESS');show(e.from||12,true);toast((e.id?'已修改「':'已新增「')+name+'」'+(e.from===9?'，再按一次「存錢」可以存第一筆':''));
   }
   $('jfDel').addEventListener('click',function(){
     var jb=clone(db.jars),j=db.jars.filter(function(x){return x.id===jarEdit.id})[0];if(!j)return;
