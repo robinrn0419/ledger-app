@@ -195,6 +195,8 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .amt-in,.amt-out{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .amt-in{color:var(--in)}
 .amt-out{color:var(--out)}
+.jar-flow b{font-weight:400;color:var(--label)}
+.jar-flow i{font-style:normal;margin:0 6px;color:var(--sec)}
 .amt-jar{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--sec)}
 .rec.fresh{animation:fresh 1.6s var(--ease)}
 @keyframes fresh{0%,35%{background:var(--press)}100%{background:var(--card)}}
@@ -1128,11 +1130,13 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   function jarRow(x){
     var li=el('li'),b=el('button','rec jar-rec');b.type='button';
     b.appendChild(ico({color:'#C9739A',icon:'piggy'}));
-    var main=el('span','rec-main','存錢筒');
-    main.appendChild(el('span',null,'・'+x.name));
-    main.appendChild(el('small','rec-note',(JAR_TYPE[x.type]||'')+(x.note?'・'+x.note:'')));
+    var f=jarFlow(x),main=el('span','rec-main jar-flow');
+    main.appendChild(el('b',null,f[0]));
+    main.appendChild(el('i',null,'→'));
+    main.appendChild(el('b',null,f[1]));
+    main.appendChild(el('small','rec-note',(x.type==='take'?'可支配不夠，從存錢筒拿':JAR_TYPE[x.type]||'')+(x.note?'・'+x.note:'')));
     b.appendChild(main);
-    b.appendChild(el('span','amt-jar',(x.amt>0?'存 ':'拿 ')+fmt(Math.abs(x.amt))));
+    b.appendChild(el('span','amt-jar',fmt(Math.abs(x.amt))));
     b.addEventListener('click',function(){buzz.tap();show(12)});
     li.appendChild(b);return li;
   }
@@ -1649,7 +1653,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var rec={id:newId(),kind:flow.kind,amt:amt,cat:big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,date:today(),note:note,proj:null,src:'manual',ref:null,at:now,upd:now};
     function commit(takes){
       var jb=snapJ();
-      applyTakes(takes,label);
+      applyTakes(takes,[big.name,sub&&sub.name,sub2&&sub2.name].filter(Boolean).join('・'));
       db.recs.push(rec);
       var got=rec.kind==='in'?jarIncome(rec.amt):0;
       if(!save()){db.recs.pop();restoreJ(jb);return}
@@ -2342,8 +2346,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     function commit(takes){
       var jb=snapJ();
       if(jar){
-        jarLog(jar,-use,'buy',c.name);
-        if(jar.saved>use)jarLog(jar,-(jar.saved-use),'out','買完剩下的回到可支配');
+        jarLog(jar,-use,'buy','',c.name);
+        if(jar.saved>use)jarLog(jar,-(jar.saved-use),'out','買完剩下的');
         db.jars=db.jars.filter(function(j){return j.id!==jar.id});
       }
       applyTakes(takes,c.name);
@@ -2410,9 +2414,16 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   var jarEdit=null,take=null;
   /* 存錢筒紀錄：amt 正的是存進去、負的是拿出來。type：in 存入、out 拿出、auto 自動存、income 收入抽成、take 拿去付、buy 買了、del 刪除 */
   var JAR_TYPE={in:'存入',out:'拿出',auto:'自動存',income:'收入抽成',take:'拿去付',buy:'買了',del:'刪除'};
-  function jarLog(j,amt,type,note){
+  function jarLog(j,amt,type,note,to){
     if(!amt)return;
-    db.jarLog.push({id:newId(),jar:j.id,name:j.name,amt:amt,type:type,note:note||'',date:today(),at:Date.now()});
+    db.jarLog.push({id:newId(),jar:j.id,name:j.name,amt:amt,type:type,note:note||'',to:to||'',date:today(),at:Date.now()});
+  }
+  /* 主頁那一列寫「從哪裡 → 到哪裡」 */
+  function jarFlow(x){
+    if(x.type==='income')return ['收入',x.name];
+    if(x.amt>0)return ['可支配',x.name];
+    if(x.type==='take'||x.type==='buy')return [x.name,x.to||x.note||'支出'];
+    return [x.name,'可支配'];
   }
   function snapJ(){return {jars:clone(db.jars),log:db.jarLog.slice()}}
   function restoreJ(x){db.jars=x.jars;db.jarLog=x.log}
@@ -2515,7 +2526,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   $('jfDel').addEventListener('click',function(){
     var jb=snapJ(),j=db.jars.filter(function(x){return x.id===jarEdit.id})[0];if(!j)return;
     db.jars=db.jars.filter(function(x){return x!==j});
-    jarLog(j,-j.saved,'del','錢回到可支配');
+    jarLog(j,-j.saved,'del','存錢筒刪掉了');
     if(!save()){restoreJ(jb);return}
     buzz.tap('MEDIUM');show(12,true);
     toast('已刪除「'+j.name+'」'+(j.saved?'，'+fmt(j.saved)+' 元回到可支配':''),function(){restoreJ(jb);save();if(current===12)paintJars()});
@@ -2617,7 +2628,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     t2.done(list);
   }
   function applyTakes(list,note){
-    (list||[]).forEach(function(x){var j=db.jars.filter(function(y){return y.id===x.id})[0];if(j){j.saved=Math.max(0,j.saved-x.amt);jarLog(j,-x.amt,'take',note)}});
+    (list||[]).forEach(function(x){var j=db.jars.filter(function(y){return y.id===x.id})[0];if(j){j.saved=Math.max(0,j.saved-x.amt);jarLog(j,-x.amt,'take','',note)}});
   }
 
   /* ---------- 搜尋 ---------- */
