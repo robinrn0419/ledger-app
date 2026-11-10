@@ -211,7 +211,7 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .amt-big span{font-family:var(--font);font-size:22px;font-weight:600;letter-spacing:0;margin-left:6px;color:var(--sec)}
 .amt-big.zero output{color:var(--sec);opacity:.5}
 .amt-big.shake{animation:shake .4s var(--ease)}
-.form.shake,.take-top.shake{animation:shake .4s var(--ease)}
+.form.shake,.take-top.shake,.note-box.shake{animation:shake .4s var(--ease)}
 @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 .amt-note{min-height:18px;margin-top:2px;font-size:13px;color:var(--sec)}
 .grow{flex:1;min-height:16px}
@@ -366,7 +366,9 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .jar-head{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left}
 .jar-head b{flex:1;min-width:0;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .jar-head em{flex:none;font-style:normal;font-family:var(--round);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-.jar-head svg{flex:none;width:7px;height:12px;color:var(--sec);opacity:.6;align-self:center}
+.jar-head > svg{flex:none;width:7px;height:12px;color:var(--sec);opacity:.6;align-self:center}
+.jar-head .ico{align-self:center}
+.jar-head{align-items:center}
 .jar .bar{margin-top:10px}
 .jar .bar i{height:10px;border-radius:5px}
 .jar-rule{margin-top:6px;font-size:12px;color:var(--sec)}
@@ -758,6 +760,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <div class="group form">
         <label class="f-row"><span>名稱</span><input type="text" id="jfName" placeholder="要存什麼" maxlength="30" autocomplete="off" enterkeyhint="next"></label>
         <label class="f-row"><span>目標</span><input type="text" id="jfGoal" placeholder="可不填" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off"><i>元</i></label>
+        <button type="button" class="f-row f-pick" id="jfCat"><span>類別</span><b id="jfCatName"></b></button>
       </div>
       <div class="head">自動存錢（不用的留空白）</div>
       <div class="group form rules">
@@ -1477,11 +1480,11 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     document.body.dataset.kind=flow.kind;
     $('amt').textContent=fmt(n);
     $('amtBox').classList.toggle('zero',!n);
-    var st=flow.mode==='start',ji=flow.mode==='jar-in',jo=flow.mode==='jar-out';
-    if(ji||jo)delete document.body.dataset.kind;
-    $('amtKind').textContent=st?'目前有多少錢':ji?'存進「'+flow.jar.name+'」':jo?'從「'+flow.jar.name+'」拿出':flow.kind==='in'?'收入':'支出';
-    $('amtNote').textContent=st?'存款加現金的總數，之後隨時可以改。':ji?'可支配還有 '+fmt(spendable())+' 元'+(flow.jar.goal?'，離目標還差 '+fmt(Math.max(0,flow.jar.goal-flow.jar.saved))+' 元':''):jo?'裡面有 '+fmt(flow.jar.saved)+' 元，拿出來會回到可支配':flow.mode==='edit'?'修改：'+dayText(flow.rec.date)+'的紀錄':'';
-    $('kindSeg').hidden=st||ji||jo||flow.mode==='edit';  /* 修改金額時不能換收支（要從明細的「類型」改） */
+    var st=flow.mode==='start',ji=flow.mode==='jar-in',jo=flow.mode==='jar-out',jn=flow.mode==='jar-new';
+    if(ji||jo||jn)delete document.body.dataset.kind;
+    $('amtKind').textContent=st?'目前有多少錢':jn?'存錢筒的目標':ji?'存進「'+flow.jar.name+'」':jo?'從「'+flow.jar.name+'」拿出':flow.kind==='in'?'收入':'支出';
+    $('amtNote').textContent=st?'存款加現金的總數，之後隨時可以改。':jn?'想存到多少？不設目標就直接按「下一步」':ji?'可支配還有 '+fmt(spendable())+' 元'+(flow.jar.goal?'，離目標還差 '+fmt(Math.max(0,flow.jar.goal-flow.jar.saved))+' 元':''):jo?'裡面有 '+fmt(flow.jar.saved)+' 元，拿出來會回到可支配':flow.mode==='edit'?'修改：'+dayText(flow.rec.date)+'的紀錄':'';
+    $('kindSeg').hidden=st||ji||jo||jn||flow.mode==='edit';  /* 修改金額時不能換收支（要從明細的「類型」改） */
     $('kindSeg').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===flow.kind))});
     paintDock();
   }
@@ -1523,7 +1526,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       if(!save())return;
       buzz.note('SUCCESS');show(1,true);toast('已設定目前有 '+fmt(n)+' 元');return;
     }
-    if(!n){
+    if(!n&&flow.mode!=='jar-new'){
       var a=$('amtBox');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
       buzz.note('WARNING');return;
     }
@@ -1535,6 +1538,11 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   /* ---------- 選大類、小類 ---------- */
   function pickSum(n){
     var amt=parseInt(flow.amt,10)||0;
+    if(flow.mode==='jar-new'||flow.mode==='jarcat'){
+      $('sum'+n).textContent='存錢筒的目標';
+      var bj=$('amt'+n);bj.textContent=amt?fmt(amt)+' 元':'沒有目標';bj.className='';
+      return;
+    }
     $('sum'+n).textContent=flow.kind==='in'?'收入':'支出';
     var b=$('amt'+n);b.textContent=(flow.kind==='in'?'+':'−')+fmt(amt)+' 元';b.className=flow.kind==='in'?'in':'';
   }
@@ -1595,6 +1603,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   }
   function toNote(sub,sub2){
     flow.pick={sub:sub,sub2:sub2};
+    if(flow.mode==='jarcat'){  /* 存錢筒表單改類別：選好就回表單 */
+      buzz.tap();jarEdit.cat=flow.big.id;jarEdit.sub=sub?sub.id:null;jarEdit.sub2=sub2?sub2.id:null;
+      show(13,true);return;
+    }
     if(flow.mode==='cart'){  /* 購物車選類別：選好就回表單 */
       buzz.tap();cartEdit.cat=flow.big.id;cartEdit.sub=sub?sub.id:null;cartEdit.sub2=sub2?sub2.id:null;
       show(10,true);return;
@@ -1617,8 +1629,11 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var p=flow.pick;
     $('sum8').textContent=[flow.big.name,p.sub&&p.sub.name,p.sub2&&p.sub2.name].filter(Boolean).join('・');
     var inp=$('noteIn');inp.value=flow.note;
+    var jn=flow.mode==='jar-new';
+    inp.placeholder=jn?'品名（要存什麼）':'備註（可不填）';
+    $('recentHead').textContent=jn?'購物車裡的':'最近的備註';
     var box=$('recent');box.textContent='';
-    var list=recentNotes();
+    var list=jn?db.cart.map(function(c){return c.name}).filter(function(n,i,a){return a.indexOf(n)===i}).slice(0,12):recentNotes();
     $('recentHead').hidden=!list.length;
     list.forEach(function(t){
       var b=el('button','chip',t);b.type='button';
@@ -1640,6 +1655,14 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   function finish(){
     var sub=flow.pick.sub,sub2=flow.pick.sub2,note=(flow.note||'').trim();
+    if(flow.mode==='jar-new'){  /* 新增存錢筒：品名一定要填，接著到自動存錢的設定 */
+      if(!note){
+        var nb=document.querySelector('#s8 .note-box');nb.classList.remove('shake');void nb.offsetWidth;nb.classList.add('shake');
+        buzz.note('WARNING');toast('寫一下要存什麼');return;
+      }
+      jarEdit={id:null,name:note,goal:parseInt(flow.amt,10)||0,month:0,days:0,daysAmt:0,income:0,cat:flow.big.id,sub:sub?sub.id:null,sub2:sub2?sub2.id:null,fromFlow:true};
+      buzz.tap();show(13);return;
+    }
     var amt=parseInt(flow.amt,10)||0,big=flow.big,now=Date.now();
     var label=[big.name,sub&&sub.name,sub2&&sub2.name].filter(Boolean).join('・')+' '+(flow.kind==='in'?'+':'−')+fmt(amt)+' 元';
     if(flow.mode==='edit'){
@@ -1728,7 +1751,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('tabbar').hidden=!top;
     $('dock').hidden=$('primary').hidden&&!top;
     $('tabbar').querySelectorAll('button').forEach(function(b){b.classList.toggle('on',b.dataset.tab===top)});
-    if(current===8)p.textContent=flow.mode==='edit'?'儲存':'存好';
+    if(current===8)p.textContent=flow.mode==='edit'?'儲存':flow.mode==='jar-new'?'下一步':'存好';
     if(current===1)p.innerHTML=PLUS+'記帳';
     if(current===9)p.innerHTML=PLUS+'新增想買的';
     if(current===10||current===13)p.textContent='存好';
@@ -1739,7 +1762,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     nx.hidden=current!==2;
     if(current===2){
       nx.textContent=flow.mode==='start'?'完成':flow.mode==='edit'?'儲存':flow.mode==='jar-in'?'存入':flow.mode==='jar-out'?'拿出':'下一步';
-      nx.disabled=flow.mode!=='start'&&!(parseInt(flow.amt,10)>0);
+      nx.disabled=flow.mode!=='start'&&flow.mode!=='jar-new'&&!(parseInt(flow.amt,10)>0);
     }
     syncGlass();
   }
@@ -1800,8 +1823,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var pk=flow.pick||{};
     var ed=flow.mode==='edit';
     var cm=flow.mode==='cart';
-    $('backLabel').textContent=cancel?'取消':cm&&current===3?'想買的':current===10?'購物車':current===13?(jarEdit&&jarEdit.from===9?'購物車':'存錢筒'):current===14?(take&&take.from===9?'購物車':'備註'):current===5&&detailFrom===11?'搜尋':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
-    $('navTitle').textContent=current===12?'存錢筒':current===13?(jarEdit&&jarEdit.id?'修改存錢筒':'新增存錢筒'):current===14?'可支配不夠':current===2?(flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':flow.mode==='jar-in'?'存進存錢筒':flow.mode==='jar-out'?'從存錢筒拿出':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'設定':current===7?'統計':current===8?'備註':current===9?'購物車':current===10?(cartEdit&&cartEdit.id?'修改想買的':'新增想買的'):current===11?'搜尋':'明細';
+    $('backLabel').textContent=cancel?'取消':flow.mode==='jar-new'&&current===3?'目標':flow.mode==='jarcat'&&current===3?'存錢筒':current===13&&jarEdit&&jarEdit.fromFlow?'品名':cm&&current===3?'想買的':current===10?'購物車':current===13?(jarEdit&&jarEdit.from===9?'購物車':'存錢筒'):current===14?(take&&take.from===9?'購物車':'備註'):current===5&&detailFrom===11?'搜尋':ed&&(current===3||current===8)?'明細':current===8?(pk.sub2?pk.sub.name:pk.sub?flow.big.name:'類別'):current===3?'金額':current===4?(flow.sub?flow.big.name:'類別'):'主頁';
+    $('navTitle').textContent=current===12?'存錢筒':current===13?(jarEdit&&jarEdit.id?'修改存錢筒':'新增存錢筒'):current===14?'可支配不夠':current===2?(flow.mode==='jar-new'?'新增存錢筒':flow.mode==='start'?'起始金額':flow.mode==='edit'?'修改金額':flow.mode==='jar-in'?'存進存錢筒':flow.mode==='jar-out'?'從存錢筒拿出':'記帳'):current===3?(ed&&flow.only==='kind'?'改成'+(flow.kind==='in'?'收入':'支出'):'選擇類別'):current===4?(flow.sub||flow.big).name:current===6?'設定':current===7?'統計':current===8?(flow.mode==='jar-new'?'品名':'備註'):current===9?'購物車':current===10?(cartEdit&&cartEdit.id?'修改想買的':'新增想買的'):current===11?'搜尋':'明細';
   }
   function show(n,back){
     $('shell').classList.toggle('back',!!back);
@@ -1831,7 +1854,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(current===8)finish();
     else if(current===9)openCartForm(null);
     else if(current===10)saveCartForm();
-    else if(current===12)openJarForm(null);
+    else if(current===12){flow={mode:'jar-new',kind:'out',amt:'',big:null,rec:null,note:'',only:null,from:12};buzz.tap();show(2)}
     else if(current===13)saveJarForm();
     else if(current===14)confirmTake();
     else startFlow('new');
@@ -1841,9 +1864,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(TOP[current])return;
     buzz.tap();
     if(current===2)show(flow.mode==='edit'?5:flow.from||1,true);
+    else if(current===13&&jarEdit.fromFlow)show(8,true);
     else if(current===13)show(jarEdit.from||12,true);
     else if(current===14)show(take.from,true);
-    else if(current===3)show(flow.mode==='edit'?5:flow.mode==='cart'?10:2,true);
+    else if(current===3)show(flow.mode==='edit'?5:flow.mode==='cart'?10:flow.mode==='jarcat'?13:2,true);
     else if(current===4){if(flow.sub){flow.sub=null;show(4,true)}else show(3,true)}
     else if(current===8&&flow.mode==='edit')show(5,true);
     else if(current===8){var p=flow.pick;if(p.sub2){flow.sub=p.sub;show(4,true)}else if(p.sub){flow.sub=null;show(4,true)}else show(3,true)}
@@ -2333,7 +2357,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   function saveForCart(c){
     var jar=jarOfCart(c);
     if(!jar){  /* 第一次：先到存錢筒表單（名稱、目標已填好），可以順便設自動存錢 */
-      jarEdit={id:null,name:c.name,goal:c.amt,month:0,days:0,daysAmt:0,income:0,cartId:c.id,from:9};
+      jarEdit={id:null,name:c.name,goal:c.amt,month:0,days:0,daysAmt:0,income:0,cat:c.cat,sub:c.sub||null,sub2:c.sub2||null,cartId:c.id,from:9};
       buzz.tap();show(13);return;
     }
     openJarMove(jar,'jar-in',9);
@@ -2451,6 +2475,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     db.jars.forEach(function(j){
       var card=el('div','jar');
       var head=el('button','jar-head');head.type='button';
+      if(j.cat&&db.cats.some(function(c){return c.id===j.cat}))head.appendChild(ico(bigById(j.cat)));
       head.appendChild(el('b',null,j.name));
       head.appendChild(el('em',null,fmt(j.saved)));
       head.insertAdjacentHTML('beforeend',CHEV);
@@ -2487,7 +2512,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     });
   }
   function openJarForm(j){
-    jarEdit=j?{id:j.id,name:j.name,goal:j.goal||0,month:j.month||0,days:j.days||0,daysAmt:j.daysAmt||0,income:j.income||0}:{id:null,name:'',goal:0,month:0,days:0,daysAmt:0,income:0};
+    jarEdit=j?{id:j.id,name:j.name,goal:j.goal||0,month:j.month||0,days:j.days||0,daysAmt:j.daysAmt||0,income:j.income||0,cat:j.cat||null,sub:j.sub||null,sub2:j.sub2||null}:{id:null,name:'',goal:0,month:0,days:0,daysAmt:0,income:0,cat:null,sub:null,sub2:null};
     buzz.tap();show(13);
   }
   var JF={jfGoal:'goal',jfMonth:'month',jfDays:'days',jfDaysAmt:'daysAmt',jfIncome:'income'};
@@ -2496,9 +2521,15 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('jfName').value=e.name;
     Object.keys(JF).forEach(function(id){$(id).value=e[JF[id]]?String(e[JF[id]]):''});
     $('jfDelBox').hidden=!e.id;
+    var cn=$('jfCatName');cn.textContent=e.cat?catLabel(e):'可不選';cn.classList.toggle('ph',!e.cat);
     document.querySelector('#s13 .form').className='group form';
   }
   $('jfName').addEventListener('input',function(){jarEdit.name=this.value});
+  $('jfCat').addEventListener('click',function(){
+    buzz.tap();
+    flow={mode:'jarcat',kind:'out',amt:String(jarEdit.goal||0),big:null,rec:null,note:'',only:null};
+    show(3);
+  });
   $('jfName').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('jfGoal').focus()}});
   Object.keys(JF).forEach(function(id){
     $(id).addEventListener('input',function(){
@@ -2516,12 +2547,13 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     }
     var jb=snapJ(),j=db.jars.filter(function(x){return x.id===e.id})[0];
     if(!j){j=newJar(name,e.goal);j.cartId=e.cartId||null;db.jars.unshift(j)}
+    j.cat=e.cat||null;j.sub=e.sub||null;j.sub2=e.sub2||null;
     /* 規則有改就從現在重新算起，不會一口氣補存以前的 */
     if(j.month!==e.month||(j.goal||0)!==e.goal)j.lastMonth=shiftMonth(monthKey(new Date()),-1);
     if(j.days!==e.days||j.daysAmt!==e.daysAmt)j.lastDay=today();
     j.name=name;j.goal=e.goal||null;j.month=e.goal?e.month:0;j.days=e.days;j.daysAmt=e.daysAmt;j.income=e.income;
     if(!save()){restoreJ(jb);return}
-    buzz.note('SUCCESS');show(e.from||12,true);toast((e.id?'已修改「':'已新增「')+name+'」'+(e.from===9?'，再按一次「存錢」可以存第一筆':''));
+    buzz.note('SUCCESS');show(e.from||12,e.fromFlow?false:true);toast((e.id?'已修改「':'已新增「')+name+'」'+(e.from===9?'，再按一次「存錢」可以存第一筆':''));
   }
   $('jfDel').addEventListener('click',function(){
     var jb=snapJ(),j=db.jars.filter(function(x){return x.id===jarEdit.id})[0];if(!j)return;
