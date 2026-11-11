@@ -200,7 +200,7 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 /* 左滑刪除 */
 .swipe{position:relative;overflow:hidden;transition:height .26s var(--ease),opacity .26s}
 .list li.swipe + li::before,.list li + li.swipe::before{z-index:2}
-.swipe > .rec,.swipe > .cart-row{position:relative;z-index:1;transition:transform .32s var(--ease)}
+.swipe > .rec,.swipe > .wish{position:relative;z-index:1;transition:transform .32s var(--ease)}
 .sw-del{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:24px;background:var(--red);color:#FFFFFF;font-size:16px;font-weight:600;visibility:hidden}
 .swipe.sw-on .sw-del{visibility:visible}
 .swipe.sw-far .sw-del{padding-right:calc(100% - 88px)}
@@ -341,17 +341,36 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .tabbar svg{width:25px;height:25px}
 .dock:has(.primary[hidden]){padding-top:8px}
 .native-glass #tabbar{visibility:hidden}
-/* 購物車 */
-.cart-sum{display:flex;align-items:baseline;justify-content:space-between;margin:10px 4px 0;font-size:15px;color:var(--sec)}
-.cart-sum b{font-family:var(--round);font-size:26px;font-weight:700;color:var(--label);font-variant-numeric:tabular-nums}
-.cart-row{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 12px 8px 14px;background:var(--card)}
-.cart-row .ci{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left}
-.cart-row .ci span{min-width:0}
-.cart-row .ci b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cart-row .ci small{display:block;margin-top:1px;font-size:13px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cart-row .ca{flex:none;font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums}
-.cart-add{flex:none;height:32px;padding:0 14px;border-radius:16px;background:var(--fill);color:var(--tint);font-size:15px;font-weight:600;transition:transform .4s var(--spring)}
-.cart-add:active{transform:scale(1.08)}
+/* 購物車、存錢筒：上面的大數字＋一項一張卡片 */
+.hero{padding:8px 4px 4px}
+.hero small{display:block;font-size:15px;color:var(--sec)}
+.hero b{display:block;margin-top:2px;font-family:var(--round);font-size:52px;font-weight:700;letter-spacing:-.02em;line-height:1.08;font-variant-numeric:tabular-nums}
+.hero b i{margin-left:5px;font-style:normal;font-size:20px;font-weight:600;letter-spacing:0;color:var(--sec)}
+.hero span{display:block;margin-top:6px;font-size:14px;color:var(--sec);font-variant-numeric:tabular-nums}
+.hero span em{font-style:normal;font-weight:600;color:var(--in)}
+.wishes{list-style:none;margin:0;padding:0}
+.wishes > li{margin-top:12px;border-radius:18px}
+.wishes > li.swipe{transition:height .26s var(--ease),opacity .26s,margin .26s var(--ease)}
+.wishes > li.sw-gone{margin-top:0}
+.wish{padding:16px 16px 14px;border-radius:18px;background:var(--card)}
+div.jar{margin-top:12px}
+.wish-head{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.wish-head > span:not(.ico){flex:1;min-width:0}
+.wish-head b{display:block;font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wish-head small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wish-head em{flex:none;text-align:right;font-style:normal;font-family:var(--round);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.wish-head em small{font-size:12px}
+.wish-head > svg{flex:none;width:7px;height:12px;color:var(--sec);opacity:.5}
+.wish .bar{margin-top:14px}
+.wish-st{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:13px;color:var(--sec);font-variant-numeric:tabular-nums}
+.wish-st:empty,.wish-st span:empty{display:none}
+.wish-st .ok{font-weight:600;color:var(--in)}
+.wish-eta{margin-top:3px;font-size:13px;color:var(--sec)}
+.wish-acts{display:flex;gap:10px;margin-top:14px}
+.wish-acts button{flex:1;height:44px;border-radius:13px;background:var(--fill);color:var(--tint);font-size:16px;font-weight:600;transition:transform .4s var(--spring),background .3s}
+.wish-acts button:active{transform:scale(.97)}
+.wish-acts button.go{background:var(--tint);color:#FFFFFF}
+.wish-acts button:disabled{color:var(--sec);opacity:.5;transform:none}
 .form .f-row{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 16px;font-size:16px;text-align:left}
 .form .f-row + .f-row::before{content:"";position:absolute;top:0;left:16px;right:0;height:.5px;background:var(--sep)}
 .form .f-row > span{flex:none;width:44px;color:var(--sec)}
@@ -361,31 +380,11 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .form .f-pick b.ph{color:var(--sec)}
 .form .f-pick::after{content:"";width:8px;height:8px;border-right:2px solid var(--sec);border-top:2px solid var(--sec);transform:rotate(45deg);opacity:.6;margin-right:4px}
 .form.bad-name #cfName::placeholder,.form.bad-amt #cfAmt::placeholder,.form.bad-cat #cfCatName{color:var(--red)}
-.cart-row{flex-wrap:wrap}
-.cart-acts{flex:none;width:100%;display:flex;align-items:center;gap:8px;padding:2px 0 4px 42px}
-.cart-acts .bar{flex:1;min-width:0}
-.cart-acts .bar small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cart-acts .sp{flex:1}
-.cart-add.buy{background:var(--tint);color:#FFFFFF}
 /* 存錢筒 */
 .bar{display:block;min-width:0}
 .bar i{display:block;height:8px;border-radius:4px;background:var(--fill);overflow:hidden}
 .bar i b{display:block;height:100%;border-radius:4px;background:var(--in);transition:width .6s var(--ease)}
-.bar small{display:block;margin-top:4px;font-size:12px;color:var(--sec);font-variant-numeric:tabular-nums}
-.jar{margin-top:12px;padding:14px 16px 12px;border-radius:16px;background:var(--card)}
-.jar-head{display:flex;align-items:baseline;gap:10px;width:100%;text-align:left}
-.jar-head b{flex:1;min-width:0;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.jar-head em{flex:none;font-style:normal;font-family:var(--round);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-.jar-head > svg{flex:none;width:7px;height:12px;color:var(--sec);opacity:.6;align-self:center}
-.jar-head .ico{align-self:center}
-.jar-head{align-items:center}
-.jar .bar{margin-top:10px}
-.jar .bar i{height:10px;border-radius:5px}
-.jar-rule{margin-top:6px;font-size:12px;color:var(--sec)}
-.jar-acts{display:flex;gap:8px;margin-top:12px}
-.jar-acts button{flex:1;height:38px;border-radius:19px;background:var(--fill);color:var(--tint);font-size:15px;font-weight:600;transition:transform .4s var(--spring)}
-.jar-acts button:active{transform:scale(1.04)}
-.jar-acts button:disabled{color:var(--sec);opacity:.5;transform:none}
+.bar.full i b{background:var(--in)}
 .form .f-row > i{flex:none;font-style:normal;color:var(--sec)}
 .form.rules .f-row > span{width:auto}
 .form.rules input{text-align:right}
@@ -741,8 +740,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
     <!-- 9 購物車：想買的東西，按「加入」直接記成支出 -->
     <section class="screen" id="s9">
-      <div class="cart-sum" id="cartSum"></div>
-      <div class="group" id="cartBox"><ul class="list" id="cartList"></ul></div>
+      <div class="hero" id="cartSum"></div>
+      <ul class="wishes" id="cartList"></ul>
       <p class="empty" id="cartEmpty" hidden>還沒有想買的東西。<br>按下方「新增想買的」加一個。</p>
       <p class="foot" id="cartFoot">「購買」記成今天的支出，東西從清單拿掉。「存錢」幫它開一個存錢筒（可以設自動存錢），之後再按就是存一筆進去；存的錢買的時候會先用。點名字可以修改。</p>
     </section>
@@ -760,7 +759,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
     <!-- 12 存錢筒 -->
     <section class="screen" id="s12">
-      <div class="cart-sum" id="jarSum"></div>
+      <div class="hero" id="jarSum"></div>
       <div id="jarList"></div>
       <p class="empty" id="jarEmpty" hidden>還沒有存錢筒。<br>按下方「新增存錢筒」，或到購物車按「存錢」。</p>
       <p class="foot" id="jarFoot">存進存錢筒的錢還是你的，只是不算在「可支配」裡。點名字可以改目標和自動存錢。</p>
@@ -2443,27 +2442,75 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var b=bigById(c.cat),s1=findSub(b.subs,c.sub),s2=s1&&findSub(s1.subs,c.sub2);
     return [b.name,s1&&s1.name,s2&&s2.name].filter(Boolean).join('・');
   }
+  /* 上面的大數字：小標、數字、底下一行說明 */
+  function hero(box,label,num,sub,good){
+    box.textContent='';
+    box.appendChild(el('small',null,label));
+    var b=el('b',null,fmt(num));b.appendChild(el('i',null,'元'));box.appendChild(b);
+    var sp=el('span',null,sub);if(good){sp.appendChild(document.createTextNode('・'));sp.appendChild(el('em',null,good))}
+    box.appendChild(sp);
+  }
+  /* 最近平均一個月收入多少（過去 3 個完整的月；沒有就看這個月），估「收入抽幾 %」一個月大約存多少 */
+  function avgIncome(){
+    var mk=monthKey(new Date()),by={};
+    db.recs.forEach(function(r){if(r.kind==='in'){var k=r.date.slice(0,7);by[k]=(by[k]||0)+r.amt}});
+    var sum=0,n=0;
+    for(var i=1;i<=3;i++){var k=shiftMonth(mk,-i);if(by[k]){sum+=by[k];n++}}
+    return n?sum/n:(by[mk]||0);
+  }
+  /* 照自動存錢的速度，大約多久存滿。沒設自動存錢、或沒有目標就回傳空的 */
+  function etaText(j,inc){
+    if(!j||!j.goal||jarFull(j))return '';
+    var left=j.goal-j.saved,day=0;
+    if(j.month>0)day+=j.goal*j.month/100/30.4;
+    if(j.days>0&&j.daysAmt>0)day+=j.daysAmt/j.days;
+    if(j.income>0)day+=inc*j.income/100/30.4;
+    if(!(day>0))return '';
+    var d=Math.ceil(left/day);
+    return '照自動存錢，大約 '+(d<45?d+' 天':d<730?Math.round(d/30.4)+' 個月':Math.round(d/365)+' 年')+'存滿';
+  }
+  /* 現在的錢夠不夠買：可支配＋它自己存錢筒裡的 */
+  function canBuy(c){var j=jarOfCart(c);return Math.max(spendable(),0)+(j?j.saved:0)>=c.amt}
+  function wishHead(big,name,sub,amt,amtSub,chev){
+    var h=el('button','wish-head');h.type='button';
+    if(big)h.appendChild(ico(big));
+    var t=el('span');t.appendChild(el('b',null,name));if(sub)t.appendChild(el('small',null,sub));
+    h.appendChild(t);
+    var e=el('em',null,amt);if(amtSub)e.appendChild(el('small',null,amtSub));
+    h.appendChild(e);
+    if(chev)h.insertAdjacentHTML('beforeend',CHEV);
+    return h;
+  }
+  function wishSt(card,left,right,ok){
+    var st=el('div','wish-st');
+    st.appendChild(el('span',null,left||''));
+    st.appendChild(el('span',ok?'ok':null,right||''));
+    card.appendChild(st);
+  }
   function paintCart(){
     var list=db.cart,ul=$('cartList');ul.textContent='';
-    var sum=list.reduce(function(a,c){return a+c.amt},0);
-    $('cartSum').innerHTML='';
-    if(list.length){$('cartSum').appendChild(el('span',null,list.length+' 樣，全部買下來要'));$('cartSum').appendChild(el('b',null,fmt(sum)+' 元'))}
-    $('cartBox').hidden=$('cartFoot').hidden=!list.length;$('cartEmpty').hidden=!!list.length;
+    var sum=list.reduce(function(a,c){return a+c.amt},0),inc=avgIncome();
+    var can=list.filter(canBuy).length;
+    $('cartSum').hidden=!list.length;
+    if(list.length)hero($('cartSum'),list.length+' 樣，全部買下來要',sum,'可支配 '+fmt(spendable())+' 元',can?can+' 樣買得起了':'');
+    $('cartFoot').hidden=!list.length;$('cartEmpty').hidden=!!list.length;
     list.forEach(function(c){
-      var li=el('li'),row=el('div','cart-row');
-      var info=el('button','ci');info.type='button';
-      info.appendChild(ico(bigById(c.cat)));
-      var t=el('span');t.appendChild(el('b',null,c.name));t.appendChild(el('small',null,catLabel(c)+(c.note?'・'+c.note:'')));
-      info.appendChild(t);
+      var li=el('li'),row=el('div','wish cart-row'),jar=jarOfCart(c),ok=canBuy(c);
       function busy(){if(row.dataset.swiped)return true;if(swOpen&&swOpen.li===li){swClose();return true}}
+      var info=wishHead(bigById(c.cat),c.name,catLabel(c)+(c.note?'・'+c.note:''),fmt(c.amt),null,true);
+      info.classList.add('ci');
       info.addEventListener('click',function(){if(busy())return;buzz.tap();openCartForm(c)});
       row.appendChild(info);
-      row.appendChild(el('span','ca',fmt(c.amt)));
-      var acts=el('div','cart-acts'),jar=jarOfCart(c);
-      if(jar)acts.appendChild(barEl(jar.saved,c.amt,true));else acts.appendChild(el('span','sp'));
+      if(jar){
+        row.appendChild(barEl(jar.saved,c.amt));
+        wishSt(row,'已存 '+fmt(jar.saved)+'（'+Math.floor(Math.min(100,jar.saved/c.amt*100))+'%）',ok?'買得起了':'還差 '+fmt(Math.max(0,c.amt-jar.saved))+' 元',ok);
+        var eta=ok?'':etaText(jar,inc);
+        if(eta)row.appendChild(el('div','wish-eta',eta));
+      }else wishSt(row,ok?'':'可支配還差 '+fmt(c.amt-Math.max(spendable(),0))+' 元',ok?'買得起了':'',ok);
+      var acts=el('div','wish-acts');
       var sv=el('button','cart-add','存錢');sv.type='button';
       sv.addEventListener('click',function(){if(!busy())saveForCart(c)});
-      var add=el('button','cart-add buy','購買');add.type='button';
+      var add=el('button','cart-add buy'+(ok?' go':''),'購買');add.type='button';
       add.addEventListener('click',function(){if(!busy())buyCart(c)});
       acts.appendChild(sv);acts.appendChild(add);
       row.appendChild(acts);
@@ -2481,10 +2528,9 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   }
   function jarOfCart(c){return db.jars.filter(function(j){return j.cartId===c.id})[0]||null}
   /* 進度條：存了多少／目標 */
-  function barEl(saved,goal,short){
+  function barEl(saved,goal){
     var pct=goal>0?Math.max(0,Math.min(100,saved/goal*100)):0;
-    var w=el('span','bar'),t=el('i'),f=el('b');f.style.width=pct+'%';t.appendChild(f);w.appendChild(t);
-    w.appendChild(el('small',null,short?'已存 '+fmt(saved)+'（'+Math.floor(pct)+'%）':'已存 '+fmt(saved)+'／'+fmt(goal)+' 元（'+Math.floor(pct)+'%）'));
+    var w=el('span','bar'+(pct>=100?' full':'')),t=el('i'),f=el('b');f.style.width=pct+'%';t.appendChild(f);w.appendChild(t);
     return w;
   }
   /* 購物車按「存錢」：沒有存錢筒就幫它開一個（目標＝價錢），然後直接去輸入要存多少；購物車那項留著，多一條進度條 */
@@ -2601,27 +2647,33 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   }
   function paintJars(){
     var box=$('jarList');box.textContent='';
-    var sum=jarSum();
-    $('jarSum').innerHTML='';
-    if(db.jars.length){$('jarSum').appendChild(el('span',null,'存錢筒裡共'));$('jarSum').appendChild(el('b',null,fmt(sum)+' 元'))}
+    var sum=jarSum(),inc=avgIncome();
+    $('jarSum').hidden=!db.jars.length;
+    if(db.jars.length)hero($('jarSum'),db.jars.length+' 個存錢筒，裡面共',sum,'可支配 '+fmt(spendable())+' 元');
     $('jarEmpty').hidden=!!db.jars.length;$('jarFoot').hidden=!db.jars.length;
     db.jars.forEach(function(j){
-      var card=el('div','jar');
-      var head=el('button','jar-head');head.type='button';
-      if(j.cat&&db.cats.some(function(c){return c.id===j.cat}))head.appendChild(ico(bigById(j.cat)));
-      head.appendChild(el('b',null,j.name));
-      head.appendChild(el('em',null,fmt(j.saved)));
-      head.insertAdjacentHTML('beforeend',CHEV);
+      var card=el('div','wish jar'),full=jarFull(j),rt=ruleText(j);
+      var big=j.cat&&db.cats.some(function(c){return c.id===j.cat})?bigById(j.cat):{color:'#C9739A',icon:'piggy'};
+      var head=wishHead(big,j.name,full?'存滿了，自動存錢已停止':rt?'自動：'+rt:'沒有設自動存錢',fmt(j.saved),j.goal?'目標 '+fmt(j.goal):null,true);
+      head.classList.add('jar-head');
       head.addEventListener('click',function(){openJarForm(j)});
       card.appendChild(head);
-      if(j.goal)card.appendChild(barEl(j.saved,j.goal));
-      var rt=ruleText(j);
-      if(jarFull(j))card.appendChild(el('div','jar-rule','存滿了，自動存錢已停止'));
-      else if(rt)card.appendChild(el('div','jar-rule','自動：'+rt));
-      var acts=el('div','jar-acts');
+      if(j.goal){
+        card.appendChild(barEl(j.saved,j.goal));
+        wishSt(card,Math.floor(Math.min(100,j.saved/j.goal*100))+'%',full?'存滿了':'還差 '+fmt(j.goal-j.saved)+' 元',full);
+        var eta=etaText(j,inc);
+        if(eta)card.appendChild(el('div','wish-eta',eta));
+      }
+      var acts=el('div','wish-acts');
       var a=el('button',null,'存入');a.type='button';a.addEventListener('click',function(){openJarMove(j,'jar-in',12)});
       var o=el('button',null,'拿出');o.type='button';o.disabled=!(j.saved>0);o.addEventListener('click',function(){openJarMove(j,'jar-out',12)});
-      acts.appendChild(a);acts.appendChild(o);card.appendChild(acts);
+      acts.appendChild(a);acts.appendChild(o);
+      var c=j.cartId&&db.cart.filter(function(x){return x.id===j.cartId})[0];
+      if(c&&canBuy(c)){  /* 連著購物車、錢也夠了：直接在這裡買 */
+        var g=el('button','go','購買');g.type='button';g.addEventListener('click',function(){buyCart(c)});
+        acts.appendChild(g);
+      }
+      card.appendChild(acts);
       box.appendChild(card);
     });
   }
