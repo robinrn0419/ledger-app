@@ -1149,8 +1149,26 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     main.appendChild(el('small','rec-note',(x.type==='take'?'可支配不夠，從存錢筒拿':JAR_TYPE[x.type]||'')+(x.note?'・'+x.note:'')));
     b.appendChild(main);
     b.appendChild(el('span','amt-jar',fmt(Math.abs(x.amt))));
-    b.addEventListener('click',function(){buzz.tap();show(12)});
-    li.appendChild(b);return li;
+    b.addEventListener('click',function(){
+      if(b.dataset.swiped)return;
+      if(swOpen&&swOpen.li===li){swClose();return}
+      buzz.tap();show(12);
+    });
+    li.appendChild(b);
+    makeSwipe(li,b,function(){if(!delJarLog(x))return false;paintHome();return true});
+    return li;
+  }
+  /* 刪掉一筆存錢筒紀錄：錢也退回去（存進去的回到可支配、拿出來的放回存錢筒）。
+     存錢筒已經不在（買了、刪了）就只刪紀錄；存錢筒裡的錢不夠退就不刪。可以復原。 */
+  function delJarLog(x){
+    var j=db.jars.filter(function(k){return k.id===x.jar})[0];
+    if(j&&j.saved-x.amt<0){buzz.note('WARNING');toast('「'+j.name+'」裡只剩 '+fmt(j.saved)+' 元，不夠退回');return false}
+    var jb=snapJ();
+    db.jarLog=db.jarLog.filter(function(k){return k!==x});
+    if(j)j.saved-=x.amt;
+    if(!save()){restoreJ(jb);return false}
+    toast(j?(x.amt>0?'已退回 '+fmt(x.amt)+' 元到可支配':'已放回 '+fmt(-x.amt)+' 元到「'+j.name+'」'):'已刪除這筆存錢筒紀錄',function(){restoreJ(jb);save();if(current===1)paintHome()});
+    return true;
   }
   function allMoney(){var t=db.start||0;db.recs.forEach(function(r){t+=r.kind==='in'?r.amt:-r.amt});return t}
   function jarSum(){return db.jars.reduce(function(a,j){return a+(j.saved||0)},0)}
@@ -1776,7 +1794,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   /* ---------- 主頁左滑刪除 ---------- */
   /* 往左滑露出紅色「刪除」：滑超過 60px 放開會停在打開的樣子（點紅色刪掉）；滑超過一半直接刪。
-     同時只會開一列；點別的地方或往下捲就收回去。課堂薪水匯入的、存錢筒那幾列不能滑。 */
+     同時只會開一列；點別的地方或往下捲就收回去。課堂薪水匯入的不能滑；存錢筒那幾列刪了錢會退回（delJarLog）。 */
   var swOpen=null;
   function swClose(){if(swOpen){swOpen.b.style.transform='';swOpen.li.classList.remove('sw-on');swOpen=null}}
   function makeSwipe(li,b,doDel){  /* doDel() 刪掉並重畫，成功回傳 true */
