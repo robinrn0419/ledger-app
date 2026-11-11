@@ -197,6 +197,15 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .amt-out{color:var(--out)}
 .jar-flow b{font-weight:400;color:var(--label)}
 .jar-flow i{font-style:normal;margin:0 6px;color:var(--sec)}
+/* 左滑刪除 */
+.swipe{position:relative;overflow:hidden;transition:height .26s var(--ease),opacity .26s}
+.list li.swipe + li::before,.list li + li.swipe::before{z-index:2}
+.swipe > .rec{position:relative;z-index:1;transition:transform .32s var(--ease)}
+.sw-del{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;padding-right:24px;background:var(--red);color:#FFFFFF;font-size:16px;font-weight:600;visibility:hidden}
+.swipe.sw-on .sw-del{visibility:visible}
+.swipe.sw-far .sw-del{padding-right:calc(100% - 88px)}
+.sw-del{transition:padding .2s var(--ease)}
+.swipe.sw-gone{height:0!important;opacity:0}
 .amt-jar{font-family:var(--round);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--sec)}
 .rec.fresh{animation:fresh 1.6s var(--ease)}
 @keyframes fresh{0%,35%{background:var(--press)}100%{background:var(--card)}}
@@ -1191,8 +1200,13 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       if(r.note&&r.src!=='classpay')main.appendChild(el('small','rec-note',r.note));
       b.appendChild(main);
       b.appendChild(el('span','amt-'+r.kind,signed(r)));
-      b.addEventListener('click',function(){buzz.tap();detail=r;detailFrom=1;show(5)});
+      b.addEventListener('click',function(){
+        if(b.dataset.swiped)return;
+        if(swOpen&&swOpen.li===li){swClose();return}
+        buzz.tap();detail=r;detailFrom=1;show(5);
+      });
       li.appendChild(b);ul.appendChild(li);
+      if(r.src!=='classpay')makeSwipe(li,b,r);
     });
     freshId=null;
     paintHomeChart();
@@ -1731,16 +1745,76 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     buzz.note('SUCCESS');paintDetail();
     toast('日期改成 '+dayText(v,true),function(){r.date=before;save();if(current===5)paintDetail()});
   }
-  $('delRec').addEventListener('click',function(){
-    var r=detail,i=db.recs.indexOf(r);if(i<0)return;
+  /* 刪除一筆（明細頁的「刪除這筆」和主頁左滑都用這個），可以復原 */
+  function delRecord(r){
+    var i=db.recs.indexOf(r);if(i<0)return false;
     db.recs.splice(i,1);
-    if(!save()){db.recs.splice(i,0,r);return}
+    if(!save()){db.recs.splice(i,0,r);return false}
     var n=recName(r);
-    buzz.tap('MEDIUM');show(detailFrom||1,true);
     toast('已刪除 '+n.full+' '+signed(r)+' 元',function(){
       db.recs.push(r);save();freshId=r.id;if(current===1)paintHome();
     });
+    return true;
+  }
+  $('delRec').addEventListener('click',function(){
+    if(!delRecord(detail))return;
+    buzz.tap('MEDIUM');show(detailFrom||1,true);
   });
+
+  /* ---------- 主頁左滑刪除 ---------- */
+  /* 往左滑露出紅色「刪除」：滑超過 60px 放開會停在打開的樣子（點紅色刪掉）；滑超過一半直接刪。
+     同時只會開一列；點別的地方或往下捲就收回去。課堂薪水匯入的、存錢筒那幾列不能滑。 */
+  var swOpen=null;
+  function swClose(){if(swOpen){swOpen.b.style.transform='';swOpen.li.classList.remove('sw-on');swOpen=null}}
+  function makeSwipe(li,b,r){
+    li.classList.add('swipe');
+    var del=el('button','sw-del','刪除');del.type='button';del.tabIndex=-1;
+    li.insertBefore(del,b);
+    var st=null,OPEN=88;
+    function drop(){
+      buzz.tap('MEDIUM');swOpen=null;
+      li.style.height=li.offsetHeight+'px';void li.offsetHeight;
+      li.classList.add('sw-gone');b.style.transform='translateX(-100%)';
+      setTimeout(function(){if(delRecord(r))paintHome();else{li.classList.remove('sw-gone');li.style.height='';b.style.transform=''}},260);
+    }
+    del.addEventListener('click',drop);
+    b.addEventListener('touchstart',function(e){
+      if(e.touches.length!==1)return;
+      if(swOpen&&swOpen.li!==li)swClose();
+      var t=e.touches[0];
+      st={x0:t.clientX,y0:t.clientY,base:swOpen&&swOpen.li===li?-OPEN:0,dx:0,mode:null,far:false};
+    },{passive:true});
+    b.addEventListener('touchmove',function(e){
+      if(!st)return;
+      var t=e.touches[0],dx=t.clientX-st.x0,dy=t.clientY-st.y0;
+      if(!st.mode){
+        if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+        st.mode=Math.abs(dx)>Math.abs(dy)?'h':'v';
+        if(st.mode==='h'){b.style.transition='none';li.classList.add('sw-on')}
+      }
+      if(st.mode!=='h')return;
+      e.preventDefault();
+      var x=Math.min(0,st.base+dx),w=li.offsetWidth;
+      st.dx=x;
+      b.style.transform='translateX('+x+'px)';
+      var far=-x>w*.5;
+      if(far!==st.far){st.far=far;li.classList.toggle('sw-far',far);if(far)buzz.tap('LIGHT')}
+    },{passive:false});
+    function end(){
+      if(!st)return;
+      var s0=st;st=null;
+      if(s0.mode!=='h')return;
+      b.style.transition='';li.classList.remove('sw-far');
+      if(s0.far){drop();return}
+      if(s0.dx<-60){b.style.transform='translateX(-'+OPEN+'px)';swOpen={li:li,b:b}}
+      else{b.style.transform='';li.classList.remove('sw-on');if(swOpen&&swOpen.li===li)swOpen=null}
+      b.dataset.swiped='1';setTimeout(function(){delete b.dataset.swiped},350);  /* 滑完放開不要當成點一下 */
+    }
+    b.addEventListener('touchend',end);
+    b.addEventListener('touchcancel',end);
+  }
+  document.addEventListener('touchstart',function(e){if(swOpen&&!swOpen.li.contains(e.target))swClose()},{passive:true});
+  $('scroll').addEventListener('scroll',function(){if(swOpen)swClose()},{passive:true});
 
   /* ---------- 換頁、標題列、底部按鈕 ---------- */
   function paintDock(){
