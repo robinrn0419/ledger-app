@@ -363,7 +363,8 @@ body[data-kind="in"] .amt-kind{color:var(--in)}
 .form.bad-name #cfName::placeholder,.form.bad-amt #cfAmt::placeholder,.form.bad-cat #cfCatName{color:var(--red)}
 .cart-row{flex-wrap:wrap}
 .cart-acts{flex:none;width:100%;display:flex;align-items:center;gap:8px;padding:2px 0 4px 42px}
-.cart-acts .bar{flex:1}
+.cart-acts .bar{flex:1;min-width:0}
+.cart-acts .bar small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cart-acts .sp{flex:1}
 .cart-add.buy{background:var(--tint);color:#FFFFFF}
 /* 存錢筒 */
@@ -666,6 +667,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         <div><small>本月支出</small><b id="monthOut">0</b></div>
       </div>
       <div id="feed"></div>
+      <div id="feedMore" aria-hidden="true"></div>
       <p class="empty" id="empty" hidden>還沒有紀錄。<br>按下方的「記帳」記第一筆。</p>
     </section>
 
@@ -1203,8 +1205,17 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var rs=db.recs.concat(db.jarLog).sort(function(a,b){return a.date<b.date?1:a.date>b.date?-1:b.at-a.at});
     $('empty').hidden=!!rs.length;
     var box=$('feed');box.textContent='';
-    var ul=null,last=null;
-    rs.forEach(function(r){
+    feed={rs:rs,i:0,ul:null,last:null};
+    moreFeed();
+    freshId=null;
+    paintHomeChart();
+  }
+  /* 清單分批畫：一次 60 列，捲到快到底再畫下一批（紀錄多了以後回主頁才不會卡） */
+  var feed={rs:[],i:0,ul:null,last:null};
+  function moreFeed(){
+    var box=$('feed'),end=Math.min(feed.rs.length,feed.i+60);
+    var ul=feed.ul,last=feed.last;
+    feed.rs.slice(feed.i,end).forEach(function(r){
       if(r.date!==last){
         last=r.date;
         box.appendChild(el('div','head',dayText(r.date)));
@@ -1226,9 +1237,17 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       li.appendChild(b);ul.appendChild(li);
       if(r.src!=='classpay')makeSwipe(li,b,function(){if(!delRecord(r))return false;paintHome();return true});
     });
-    freshId=null;
-    paintHomeChart();
+    feed.i=end;feed.ul=ul;feed.last=last;
   }
+  if(window.IntersectionObserver){
+    new IntersectionObserver(function(es){
+      if(es[0].isIntersecting&&current===1&&feed.i<feed.rs.length)moreFeed();
+    },{root:$('scroll'),rootMargin:'0px 0px 1200px 0px'}).observe($('feedMore'));
+  }
+  $('scroll').addEventListener('scroll',function(){  /* 備用：沒有 IntersectionObserver 或一次捲很快 */
+    if(current!==1||feed.i>=feed.rs.length)return;
+    if(this.scrollTop+this.clientHeight>this.scrollHeight-1500)moreFeed();
+  },{passive:true});
   /* 財產總額的字盡量大，位數多到放不下時才縮小，永遠一行顯示完整 */
   /* ---------- 財產總額下面的一句話 ---------- */
   /* 兩種一起看，取比較嚴重的：
@@ -2441,7 +2460,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       row.appendChild(info);
       row.appendChild(el('span','ca',fmt(c.amt)));
       var acts=el('div','cart-acts'),jar=jarOfCart(c);
-      if(jar)acts.appendChild(barEl(jar.saved,c.amt));else acts.appendChild(el('span','sp'));
+      if(jar)acts.appendChild(barEl(jar.saved,c.amt,true));else acts.appendChild(el('span','sp'));
       var sv=el('button','cart-add','存錢');sv.type='button';
       sv.addEventListener('click',function(){if(!busy())saveForCart(c)});
       var add=el('button','cart-add buy','購買');add.type='button';
@@ -2462,10 +2481,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   }
   function jarOfCart(c){return db.jars.filter(function(j){return j.cartId===c.id})[0]||null}
   /* 進度條：存了多少／目標 */
-  function barEl(saved,goal){
+  function barEl(saved,goal,short){
     var pct=goal>0?Math.max(0,Math.min(100,saved/goal*100)):0;
     var w=el('span','bar'),t=el('i'),f=el('b');f.style.width=pct+'%';t.appendChild(f);w.appendChild(t);
-    w.appendChild(el('small',null,'已存 '+fmt(saved)+'／'+fmt(goal)+' 元（'+Math.floor(pct)+'%）'));
+    w.appendChild(el('small',null,short?'已存 '+fmt(saved)+'（'+Math.floor(pct)+'%）':'已存 '+fmt(saved)+'／'+fmt(goal)+' 元（'+Math.floor(pct)+'%）'));
     return w;
   }
   /* 購物車按「存錢」：沒有存錢筒就幫它開一個（目標＝價錢），然後直接去輸入要存多少；購物車那項留著，多一條進度條 */
