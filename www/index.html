@@ -173,7 +173,6 @@ button:focus-visible{outline:2px solid var(--tint);outline-offset:2px}
 .total-num span{font-family:var(--font);font-size:20px;font-weight:600;letter-spacing:0;margin-left:6px;color:var(--sec)}
 .total-sub{display:flex;align-items:center;gap:4px;margin-top:4px;font-size:14px;color:var(--sec);font-variant-numeric:tabular-nums}
 .total-sub svg{width:7px;height:12px;opacity:.6}
-.total:active .total-num{opacity:.6}
 .setup{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:14px;padding:14px 16px;border-radius:12px;background:var(--card);color:var(--tint);font-weight:600;text-align:left;transition:background .15s}
 .setup:active{background:var(--press)}
 .setup small{display:block;margin-top:2px;font-size:13px;font-weight:400;color:var(--sec)}
@@ -595,6 +594,16 @@ div.jar{margin-top:12px}
 .month div + div::before{top:2px;bottom:2px}
 .month b{font-size:24px}
 .month.sum3 b{font-size:21px}
+/* 主頁上面重新排過：大數字 → 那句話＋小寵物 → 本月收支 → 收入來源，每段之間一樣的間距、一條細線 */
+.total-all{margin-top:8px;font-size:14px;font-weight:400;color:var(--sec)}
+.total-all b{font-weight:600;color:var(--label)}
+.total-all[hidden]{display:none}
+#s1 .mood-row{margin-top:18px}
+#s1 .month{margin-top:18px;padding:16px 0}
+#s1 .home-chart{gap:18px;margin-top:0;padding:16px 0;border-top:.5px solid var(--sep);border-bottom:.5px solid var(--sep)}
+#s1 .home-chart .hc-go{flex:none;width:8px;height:14px;margin-right:4px;color:var(--sec);opacity:.5}
+.hc-title{font-size:13px;color:var(--sec)}
+.hc-more{font-size:13px;color:var(--sec)}
 #feed{margin-top:14px}
 /* 統計頁：每一段直接是標題＋圖，段落之間留大空白 */
 #s7 .head{margin:34px 4px 4px;font-size:20px;font-weight:700;color:var(--label);letter-spacing:.01em}
@@ -658,12 +667,11 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <button type="button" class="more glass" id="moreBtn" aria-label="設定" hidden>
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="4" cy="10" r="1.8"/><circle cx="10" cy="10" r="1.8"/><circle cx="16" cy="10" r="1.8"/></svg>
       </button>
-      <button type="button" class="total" id="totalBtn">
+      <div class="total" id="totalBtn">
         <small>可支配</small>
         <span class="total-num"><output id="total">0</output><span>元</span></span>
         <span class="total-all" id="allLine"></span>
-        <span class="total-sub" id="startLine"></span>
-      </button>
+      </div>
       <div class="mood-row" id="moodRow" hidden>
         <p class="mood" id="mood" hidden></p>
         <span class="pet" id="pet" aria-hidden="true"></span>
@@ -672,14 +680,15 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         <span>先填目前有多少錢<small>存款加現金，之後會自動加收入、減支出</small></span>
         <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
       </button>
-      <button type="button" class="home-chart" id="homeChart" aria-label="收入來源，點一下看統計">
-        <span class="donut-box" id="homeDonut"></span>
-        <span class="home-legend" id="homeLegend"></span>
-      </button>
       <div class="month">
         <div class="in"><small id="mIn">本月收入</small><b id="monthIn">0</b></div>
         <div><small>本月支出</small><b id="monthOut">0</b></div>
       </div>
+      <button type="button" class="home-chart" id="homeChart" aria-label="收入來源，點一下看統計">
+        <span class="donut-box" id="homeDonut"></span>
+        <span class="home-legend" id="homeLegend"></span>
+        <svg class="hc-go" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
+      </button>
       <div id="feed"></div>
       <div id="feedMore" aria-hidden="true"></div>
       <p class="empty" id="empty" hidden>還沒有紀錄。<br>按下方的「記帳」記第一筆。</p>
@@ -733,6 +742,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
     <!-- 6 資料與備份 -->
     <section class="screen" id="s6">
+      <div class="group" style="margin-top:8px"><button type="button" class="kv-btn" id="startRow"><span class="k">起始金額</span><span class="v" id="startVal"></span><svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg></button></div>
+      <p class="foot">開始記帳時手上有多少錢（存款加現金）。全部的錢＝起始金額＋收入−支出。</p>
       <div class="head">自動備份</div>
       <div class="group"><ul class="list" id="bkInfo"></ul></div>
       <p class="foot" id="bkFoot"></p>
@@ -1210,11 +1221,8 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('total').textContent=fmt(free);
     fitTotal();
     var al=$('allLine');al.textContent='';
-    al.appendChild(el('em',null,'全部 '));al.appendChild(document.createTextNode(fmt(all)+' 元'));
-    if(jar)al.appendChild(el('em',null,'　存錢筒 '+fmt(jar)+' 元'));
-    $('startLine').innerHTML='';
-    if(has){$('startLine').appendChild(document.createTextNode('起始金額 '+fmt(db.start)+' 元'));$('startLine').insertAdjacentHTML('beforeend',CHEV)}
-    $('totalBtn').disabled=!has;
+    al.hidden=!jar;  /* 沒有存錢筒時「全部」就等於可支配，不用再寫一次 */
+    if(jar){al.appendChild(document.createTextNode('全部 '));al.appendChild(el('b',null,fmt(all)));al.appendChild(document.createTextNode(' 元　・　存錢筒 '));al.appendChild(el('b',null,fmt(jar)));al.appendChild(document.createTextNode(' 元'))}
     $('setupBtn').hidden=has;
     $('monthIn').textContent=(min?'+':'')+fmt(min);
     $('monthOut').textContent=(mout?'−':'')+fmt(mout);
@@ -1535,7 +1543,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     while(box.scrollWidth>box.clientWidth&&size>28){size-=2;box.style.fontSize=size+'px'}
   }
   window.addEventListener('resize',function(){if(current===1)fitTotal()});
-  $('totalBtn').addEventListener('click',function(){startFlow('start')});
+  $('startRow').addEventListener('click',function(){startFlow('start');flow.from=6});  /* 起始金額搬到設定頁了 */
   $('setupBtn').addEventListener('click',function(){startFlow('start')});
 
   /* ---------- 輸入金額 ---------- */
@@ -1611,7 +1619,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     if(flow.mode==='start'){
       db.start=n;
       if(!save())return;
-      buzz.note('SUCCESS');show(1,true);toast('已設定目前有 '+fmt(n)+' 元');return;
+      buzz.note('SUCCESS');show(flow.from||1,true);toast('起始金額設成 '+fmt(n)+' 元');return;
     }
     if(!n&&flow.mode!=='jar-new'){
       var a=$('amtBox');a.classList.remove('shake');void a.offsetWidth;a.classList.add('shake');
@@ -2172,11 +2180,12 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var lg=$('homeLegend');lg.textContent='';
     var top=b.rows.filter(function(x){return x.v>0}).sort(function(a,c){return c.v-a.v});
     if(!top.length)lg.appendChild(el('span','hl',null)).appendChild(el('span',null,'還沒有收入'));
-    top.slice(0,4).forEach(function(x){
+    lg.insertBefore(el('span','hc-title','收入來源'),lg.firstChild);
+    top.slice(0,3).forEach(function(x){
       var row=el('span','hl');row.appendChild(swatch(x.item.color));row.appendChild(el('span',null,x.item.name));
       row.appendChild(el('em',null,Math.round(x.v/b.total*100)+'%'));lg.appendChild(row);
     });
-    lg.appendChild(el('span','more-link','收入來源・全部　看統計 ›'));
+    if(top.length>3)lg.appendChild(el('span','hc-more','還有 '+(top.length-3)+' 項'));
   }
   $('homeChart').addEventListener('click',function(){
     var now=new Date();
@@ -2442,6 +2451,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
 
   function paintData(){
     $('glassInfo').textContent=glassNote;
+    var sv=$('startVal');sv.textContent=db.start!=null?fmt(db.start)+' 元':'還沒填';sv.classList.toggle('ph',db.start==null);
     paintSiriLog();
     var last=+(function(){try{return localStorage.getItem(BK_TIME)}catch(e){return 0}})()||0;
     var rows=[['紀錄',db.recs.length+' 筆']];
