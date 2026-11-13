@@ -393,10 +393,10 @@ div.jar{margin-top:12px}
 .rule-sw > span{flex:1!important;color:var(--label)!important}
 .rule-sw small{margin-left:8px;font-size:13px;color:var(--sec)}
 .rule-sw:disabled{opacity:.45}
-.sw{flex:none;position:relative;width:51px;height:31px;border-radius:16px;background:var(--fill);transition:background .25s var(--ease)}
-.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#FFFFFF;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .3s var(--spring)}
-.rule.on .sw{background:#34C759}
-.rule.on .sw::after{transform:translateX(20px)}
+.tog{flex:none;position:relative;width:51px;height:31px;border-radius:16px;background:var(--fill);transition:background .25s var(--ease)}
+.tog::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#FFFFFF;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .3s var(--spring)}
+.rule.on .tog{background:#34C759}
+.rule.on .tog::after{transform:translateX(20px)}
 .rule-body{display:none!important}
 .rule.on .rule-body{display:flex!important;animation:rule-in .3s var(--ease)}
 @keyframes rule-in{from{opacity:0;transform:translateY(-6px)}}
@@ -791,15 +791,15 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       <div class="head">自動存錢</div>
       <div class="group form rules" id="jfRules">
         <div class="rule" data-r="month">
-          <button type="button" class="f-row rule-sw" role="switch"><span>每月月底存一筆<small id="jfMonthHint"></small></span><i class="sw"></i></button>
+          <button type="button" class="f-row rule-sw" role="switch"><span>每月月底存一筆<small id="jfMonthHint"></small></span><i class="tog"></i></button>
           <label class="f-row rule-body"><span>存目標的</span><input type="text" id="jfMonth" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
         </div>
         <div class="rule" data-r="days">
-          <button type="button" class="f-row rule-sw" role="switch"><span>每隔幾天存一筆</span><i class="sw"></i></button>
+          <button type="button" class="f-row rule-sw" role="switch"><span>每隔幾天存一筆</span><i class="tog"></i></button>
           <div class="f-row rule-body"><span>每</span><input type="text" id="jfDays" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="每幾天"><i>天存</i><input type="text" id="jfDaysAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" aria-label="存多少元"><i>元</i></div>
         </div>
         <div class="rule" data-r="income">
-          <button type="button" class="f-row rule-sw" role="switch"><span>每次有收入抽一點</span><i class="sw"></i></button>
+          <button type="button" class="f-row rule-sw" role="switch"><span>每次有收入抽一點</span><i class="tog"></i></button>
           <label class="f-row rule-body"><span>抽收入的</span><input type="text" id="jfIncome" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
         </div>
       </div>
