@@ -615,7 +615,9 @@ div.jar{margin-top:12px}
 .hm-leg{display:flex;flex-direction:column;gap:8px;font-size:15px;color:var(--sec);font-variant-numeric:tabular-nums}
 .hm-leg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--c)}
 .hm-leg b{font-weight:600;color:var(--label)}
-.hm-grid{display:grid;grid-template-columns:1fr 1fr;border-top:.5px solid var(--sep);text-align:center}
+.hm-grid{display:grid;grid-template-columns:1fr 1fr;border-top:.5px solid var(--sep);border-bottom:.5px solid var(--sep);text-align:center;cursor:pointer;transition:opacity .15s}
+.hm-rings{cursor:pointer;transition:opacity .15s}
+.hm-grid:active,.hm-rings:active{opacity:.55}
 .hm-grid > div{position:relative;padding:12px 4px}
 .hm-grid > div[hidden]{display:none}
 .hm-grid > div:nth-child(even)::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:.5px;background:var(--sep)}
@@ -623,11 +625,6 @@ div.jar{margin-top:12px}
 .hm-grid small{display:block;font-size:13px;color:var(--sec)}
 .hm-grid b{display:block;margin-top:2px;font-family:var(--round);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 .hm-grid .in b{color:var(--in)}
-.hm-line{display:flex;align-items:center;gap:8px;width:100%;padding:14px 4px;border-top:.5px solid var(--sep);border-bottom:.5px solid var(--sep);font-size:15px;text-align:left;transition:opacity .15s}
-.hm-line:active{opacity:.55}
-.hm-line em{flex:none;font-style:normal;font-size:13px;color:var(--sec);margin-right:4px}
-.hm-line span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hm-line svg{flex:none;width:8px;height:14px;color:var(--sec);opacity:.5}
 #feed{margin-top:14px}
 /* 統計頁：每一段直接是標題＋圖，段落之間留大空白 */
 #s7 .head{margin:34px 4px 4px;font-size:20px;font-weight:700;color:var(--label);letter-spacing:.01em}
@@ -711,10 +708,6 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         <div class="in"><small id="mIn">本月收入</small><b id="monthIn">0</b></div>
         <div><small>本月支出</small><b id="monthOut">0</b></div>
       </div>
-      <button type="button" class="hm-line" id="homeChart" aria-label="收入來源，點一下看統計">
-        <em>收入來源</em><span id="homeLegend"></span>
-        <svg viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1l6 6-6 6"/></svg>
-      </button>
       <div id="feed"></div>
       <div id="feedMore" aria-hidden="true"></div>
       <p class="empty" id="empty" hidden>還沒有紀錄。<br>按下方的「記帳」記第一筆。</p>
@@ -1269,7 +1262,6 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     feed={rs:rs,i:0,ul:null,last:null};
     moreFeed();
     freshId=null;
-    paintHomeChart();
   }
   /* 清單分批畫：一次 60 列，捲到快到底再畫下一批（紀錄多了以後回主頁才不會卡） */
   var feed={rs:[],i:0,ul:null,last:null};
@@ -2203,12 +2195,6 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   function swatch(color){var s=el('i','sw');s.style.setProperty('--c',color);return s}
 
   /* 主頁的收入圓餅圖：全部時間的收入來源，旁邊列出前幾名 */
-  /* 主頁的「收入來源」縮成一行字（全部時間，前三名），點了進統計 */
-  function paintHomeChart(){
-    var b=breakdown('in',incomeItems(),function(){return true});
-    var top=b.rows.filter(function(x){return x.v>0}).sort(function(a,c){return c.v-a.v});
-    $('homeLegend').textContent=top.length?top.slice(0,3).map(function(x){return x.item.name+' '+Math.round(x.v/b.total*100)+'%'}).join('・'):'還沒有收入';
-  }
   /* 主頁的圓環：藍＝可支配占全部的幾成、紅＝這個月花掉收入的幾成、綠＝有目標的存錢筒存到幾成。
      沒有存錢筒就只有紅的；沒有設目標的存錢筒不算進綠的。 */
   var RING={free:'#0A84FF',spent:'#FF375F',jar:'#30D158'};
@@ -2252,11 +2238,14 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     var W=390,H=140,pts=ser.map(function(y,i){return (i/days*W).toFixed(1)+','+(H-16-(y-mn)/(mx-mn)*(H-44)).toFixed(1)}).join(' ');
     box.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none"><defs><linearGradient id="hmTg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--in)" stop-opacity=".26"/><stop offset="1" stop-color="var(--in)" stop-opacity="0"/></linearGradient></defs><polygon points="0,'+H+' '+pts+' '+W+','+H+'" fill="url(#hmTg)"/><polyline points="'+pts+'" fill="none" stroke="var(--in)" stroke-opacity=".5" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
   }
-  $('homeChart').addEventListener('click',function(){
+  /* 主頁沒有「收入來源」那一行了（使用者不要），改成點圓環或四格數字進統計 */
+  function openStats(){
     var now=new Date();
     stat={mode:'all',y:now.getFullYear(),m:now.getMonth()};opened={};barSel=lineSel=null;  /* 每次進來都從「全部」開始 */
     buzz.tap();show(7);
-  });
+  }
+  $('hmRings').addEventListener('click',openStats);
+  $('hmGrid').addEventListener('click',openStats);
 
   /* 統計頁的時間範圍：月／年／全部，預設全部 */
   var stat={mode:'all',y:new Date().getFullYear(),m:new Date().getMonth()};
