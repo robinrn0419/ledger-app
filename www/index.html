@@ -607,6 +607,8 @@ div.jar{margin-top:12px}
 #s1 .pet{width:128px;height:99px;margin:0}
 #s1 .total{position:relative;margin-top:18px;padding:0;text-align:center}
 #s1 .total > small,#s1 .total-num{position:relative;z-index:1}
+#s1 .total-num{display:flex;justify-content:center;align-items:baseline;overflow:visible;text-overflow:clip}
+#s1 .total-num > span{flex:none;width:0;white-space:nowrap;overflow:visible;margin-left:0;padding-left:8px}
 .hm-trend{position:absolute;left:-16px;right:-16px;bottom:-16px;height:140px;z-index:0;pointer-events:none}
 .hm-trend svg{display:block;width:100%;height:100%}
 .hm-rings{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:26px;padding:0 0 16px}
@@ -1557,12 +1559,20 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     }
   })();
 
+  /* 可支配的大數字：不管幾位數，看起來都差不多寬。
+     五位數（幾萬）剛好是 CSS 裡的基本大小；位數少就放大（最多 1.45 倍），位數多就縮到放得下。
+     「元」不占位置（數字本身置中），所以左右都要留「元」的寬度。 */
   function fitTotal(){
-    var box=document.querySelector('.total-num');
+    var box=document.querySelector('.total-num'),num=$('total'),unit=box.querySelector('span');
     box.style.fontSize='';
-    var size=parseFloat(getComputedStyle(box).fontSize);
-    while(box.scrollWidth>box.clientWidth&&size>28){size-=2;box.style.fontSize=size+'px'}
+    var base=parseFloat(getComputedStyle(box).fontSize);
+    var w=num.getBoundingClientRect().width/base;  /* 每 1px 字級，這串數字有多寬 */
+    if(!(w>0))return;
+    var room=box.clientWidth-2*(unit.getBoundingClientRect().width+10);
+    var ideal=base*3.1/w,size=ideal>=base?Math.min(base*1.45,ideal):Math.min(base,room/w);
+    box.style.fontSize=Math.max(28,Math.floor(size))+'px';
   }
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){if(current===1)fitTotal()});  /* 數字的字體載好以後寬度會變，再量一次 */
   window.addEventListener('resize',function(){if(current===1)fitTotal()});
   $('startRow').addEventListener('click',function(){startFlow('start');flow.from=6});  /* 起始金額搬到設定頁了 */
   $('setupBtn').addEventListener('click',function(){startFlow('start')});
