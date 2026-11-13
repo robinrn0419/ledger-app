@@ -389,6 +389,21 @@ div.jar{margin-top:12px}
 .form.rules .f-row > span{width:auto}
 .form.rules input{text-align:right}
 .form.rules #jfDays{flex:0 0 52px}
+.rule + .rule{border-top:.5px solid var(--sep)}
+.rule-sw > span{flex:1!important;color:var(--label)!important}
+.rule-sw small{margin-left:8px;font-size:13px;color:var(--sec)}
+.rule-sw:disabled{opacity:.45}
+.sw{flex:none;position:relative;width:51px;height:31px;border-radius:16px;background:var(--fill);transition:background .25s var(--ease)}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#FFFFFF;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .3s var(--spring)}
+.rule.on .sw{background:#34C759}
+.rule.on .sw::after{transform:translateX(20px)}
+.rule-body{display:none!important}
+.rule.on .rule-body{display:flex!important;animation:rule-in .3s var(--ease)}
+@keyframes rule-in{from{opacity:0;transform:translateY(-6px)}}
+.quick{margin-top:14px;justify-content:flex-end}
+.take-top b{transition:color .2s}
+.take-top b.ok{color:var(--in)}
+.take-top b.over{color:var(--red)}
 .form.bad-name #jfName::placeholder{color:var(--red)}
 /* 可支配不夠 */
 .take-top{padding:14px 4px 4px}
@@ -676,6 +691,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         <div class="amt-kind" id="amtKind"></div>
         <div class="amt-big" id="amtBox"><output id="amt">0</output><span>元</span></div>
         <div class="amt-note" id="amtNote"></div>
+        <div class="chips quick" id="amtQuick" hidden></div>
       </div>
       <div class="grow"></div>
       <div class="seg" id="kindSeg"><button type="button" data-v="in">收入</button><button type="button" data-v="out">支出</button></div>
@@ -750,7 +766,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     <section class="screen" id="s10">
       <div class="group form">
         <label class="f-row"><span>品名</span><input type="text" id="cfName" placeholder="想買什麼" maxlength="40" autocomplete="off" enterkeyhint="next"></label>
-        <label class="f-row"><span>金額</span><input type="text" id="cfAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off"></label>
+        <label class="f-row"><span>金額</span><input type="text" id="cfAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off"><i>元</i></label>
         <button type="button" class="f-row f-pick" id="cfCat"><span>類別</span><b id="cfCatName"></b></button>
         <label class="f-row"><span>備註</span><input type="text" id="cfNote" placeholder="可不填" maxlength="60" autocomplete="off" enterkeyhint="done"></label>
       </div>
@@ -772,13 +788,22 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
         <label class="f-row"><span>目標</span><input type="text" id="jfGoal" placeholder="可不填" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off"><i>元</i></label>
         <button type="button" class="f-row f-pick" id="jfCat"><span>類別</span><b id="jfCatName"></b></button>
       </div>
-      <div class="head">自動存錢（不用的留空白）</div>
-      <div class="group form rules">
-        <label class="f-row"><span>每月月底存目標的</span><input type="text" id="jfMonth" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
-        <div class="f-row"><span>每</span><input type="text" id="jfDays" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="每幾天"><i>天存</i><input type="text" id="jfDaysAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" aria-label="存多少元"><i>元</i></div>
-        <label class="f-row"><span>每次收入抽</span><input type="text" id="jfIncome" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
+      <div class="head">自動存錢</div>
+      <div class="group form rules" id="jfRules">
+        <div class="rule" data-r="month">
+          <button type="button" class="f-row rule-sw" role="switch"><span>每月月底存一筆<small id="jfMonthHint"></small></span><i class="sw"></i></button>
+          <label class="f-row rule-body"><span>存目標的</span><input type="text" id="jfMonth" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
+        </div>
+        <div class="rule" data-r="days">
+          <button type="button" class="f-row rule-sw" role="switch"><span>每隔幾天存一筆</span><i class="sw"></i></button>
+          <div class="f-row rule-body"><span>每</span><input type="text" id="jfDays" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" aria-label="每幾天"><i>天存</i><input type="text" id="jfDaysAmt" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" aria-label="存多少元"><i>元</i></div>
+        </div>
+        <div class="rule" data-r="income">
+          <button type="button" class="f-row rule-sw" role="switch"><span>每次有收入抽一點</span><i class="sw"></i></button>
+          <label class="f-row rule-body"><span>抽收入的</span><input type="text" id="jfIncome" placeholder="0" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off"><i>%</i></label>
+        </div>
       </div>
-      <p class="foot">自動存錢在打開 App 時處理。可支配不夠的那次會跳過；有目標的存滿就停。「月底存目標的幾 %」要有目標才有用。</p>
+      <p class="foot" id="jfSum"></p>
       <div class="group" id="jfDelBox"><button type="button" class="act del" id="jfDel">刪除存錢筒（錢回到可支配）</button></div>
     </section>
 
@@ -1536,6 +1561,18 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('amtNote').textContent=st?'存款加現金的總數，之後隨時可以改。':cn?'大概多少錢？之後可以改':jn?'想存到多少？不設目標就直接按「下一步」':ji?'可支配還有 '+fmt(spendable())+' 元'+(flow.jar.goal?'，離目標還差 '+fmt(Math.max(0,flow.jar.goal-flow.jar.saved))+' 元':''):jo?'裡面有 '+fmt(flow.jar.saved)+' 元，拿出來會回到可支配':flow.mode==='edit'?'修改：'+dayText(flow.rec.date)+'的紀錄':'';
     $('kindSeg').hidden=st||ji||jo||jn||cn||flow.mode==='edit';  /* 修改金額時不能換收支（要從明細的「類型」改） */
     $('kindSeg').querySelectorAll('button').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===flow.kind))});
+    /* 存入／拿出：幾顆快速按鈕，點一下就填好 */
+    var q=$('amtQuick');q.textContent='';q.hidden=!(ji||jo);
+    if(ji||jo){
+      var lim=ji?Math.max(spendable(),0):flow.jar.saved,opts=[100,500,1000].filter(function(v){return v<=lim}).map(function(v){return [fmt(v),v]});
+      if(ji&&flow.jar.goal&&flow.jar.goal>flow.jar.saved){var room=Math.min(flow.jar.goal-flow.jar.saved,lim);if(room>0)opts.push([room<flow.jar.goal-flow.jar.saved?'能存的都存':'存到滿',room])}
+      if(jo&&lim>0)opts.push(['全部拿出',lim]);
+      opts.forEach(function(o){
+        var c=el('button','chip'+(n===o[1]?' sel':''),o[0]);c.type='button';
+        c.addEventListener('click',function(){flow.amt=String(o[1]);buzz.tap();paintAmt()});
+        q.appendChild(c);
+      });
+    }
     paintDock();
   }
   ['1','2','3','4','5','6','7','8','9','0','del'].forEach(function(k){
@@ -2708,7 +2745,38 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     $('jfDelBox').hidden=!e.id;
     var cn=$('jfCatName');cn.textContent=e.cat?catLabel(e):'可不選';cn.classList.toggle('ph',!e.cat);
     document.querySelector('#s13 .form').className='group form';
+    if(!e.on)e.on={month:e.month>0,days:e.days>0||e.daysAmt>0,income:e.income>0};
+    paintRules();
   }
+  /* 自動存錢的三個開關：打開才出現要填的數字；下面寫這樣一個月大約存多少 */
+  var RULE={month:['month'],days:['days','daysAmt'],income:['income']};
+  function paintRules(){
+    var e=jarEdit,noGoal=!(e.goal>0);
+    document.querySelectorAll('#jfRules .rule').forEach(function(r){
+      var k=r.dataset.r,off=k==='month'&&noGoal,on=e.on[k]&&!off;
+      r.classList.toggle('on',on);
+      var sw=r.querySelector('.rule-sw');sw.setAttribute('aria-checked',String(on));sw.disabled=off;
+    });
+    $('jfMonthHint').textContent=noGoal?'要先設目標':'';
+    var m=0,t=[];
+    if(e.on.month&&!noGoal&&e.month>0){m+=e.goal*e.month/100;t.push('月底 '+fmt(e.goal*e.month/100))}
+    if(e.on.days&&e.days>0&&e.daysAmt>0){m+=e.daysAmt*30.4/e.days;t.push('每 '+e.days+' 天 '+fmt(e.daysAmt))}
+    if(e.on.income&&e.income>0){var inc=avgIncome();m+=inc*e.income/100;t.push(inc?'收入抽成約 '+fmt(inc*e.income/100):'收入抽成（還沒有收入可以估）')}
+    $('jfSum').textContent=(m>0?'這樣一個月大約存 '+fmt(m)+' 元'+(e.on.income&&e.income>0?'（收入抽成是用最近的平均收入估的）':'')+'。':t.length?'':'沒有開自動存錢，要存的時候自己按「存入」。')+
+      (m>0||t.length?'自動存錢在打開 App 時處理；可支配不夠的那次會跳過，有目標的存滿就停。':'');
+  }
+  document.querySelectorAll('#jfRules .rule-sw').forEach(function(sw){
+    sw.addEventListener('click',function(){
+      var k=sw.parentNode.dataset.r,e=jarEdit;
+      e.on[k]=!e.on[k];e.stash=e.stash||{};
+      RULE[k].forEach(function(f){
+        if(e.on[k]){e[f]=e.stash[f]||0}else{e.stash[f]=e[f];e[f]=0}
+        var id=Object.keys(JF).filter(function(x){return JF[x]===f})[0];$(id).value=e[f]?String(e[f]):'';
+      });
+      buzz.tap();paintRules();
+      if(e.on[k])sw.parentNode.querySelector('input').focus();  /* 要在點的當下就 focus，iPhone 才會跳鍵盤 */
+    });
+  });
   $('jfName').addEventListener('input',function(){jarEdit.name=this.value});
   $('jfCat').addEventListener('click',function(){
     buzz.tap();
@@ -2723,6 +2791,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
       if((id==='jfMonth'||id==='jfIncome')&&+v>100)v='100';
       if(v!==this.value)this.value=v;
       jarEdit[JF[id]]=parseInt(v,10)||0;
+      paintRules();
     });
   });
   function saveJarForm(){
@@ -2808,8 +2877,7 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
   function takeSum(){return take.jars.reduce(function(a,j){return a+(take.vals[j.id]||0)},0)}
   function paintTake(){
     $('takeWhat').textContent=take.label;
-    $('takeLack').textContent='還差 '+fmt(take.lack)+' 元';
-    $('takeNote').textContent='可支配只有 '+fmt(spendable())+' 元。要從哪個存錢筒拿？';
+    $('takeNote').textContent='可支配只有 '+fmt(spendable())+' 元，差 '+fmt(take.lack)+' 元。要從哪個存錢筒拿？';
     var ul=$('takeList');ul.textContent='';
     take.jars.forEach(function(j){
       var li=el('li'),row=el('div','take-row');
@@ -2833,9 +2901,10 @@ body:not(.native-glass) .seg button[aria-pressed="true"]{background:var(--seg);b
     takeFoot();
   }
   function takeFoot(){
-    var d=take.need-takeSum();
-    $('takeFoot').textContent=(d>0?'還要再拿 '+fmt(d)+' 元。':d<0?'拿太多了，多了 '+fmt(-d)+' 元。':'剛好，可以按「確定」。')+
-      '點存錢筒的名字可以直接從它拿，也可以自己填數字分開拿。'+(take.need<take.lack?'存錢筒全部加起來也不夠，剩下的 '+fmt(take.lack-take.need)+' 元會讓可支配變負的。':'');
+    var d=take.need-takeSum(),b=$('takeLack');
+    b.textContent=d>0?'還差 '+fmt(d)+' 元':d<0?'多拿了 '+fmt(-d)+' 元':'夠了';
+    b.className=d>0?'':d<0?'over':'ok';
+    $('takeFoot').textContent='點存錢筒的名字＝不夠的從它拿（再點一次取消），也可以自己填數字分開拿。'+(take.need<take.lack?'存錢筒全部加起來也不夠，剩下的 '+fmt(take.lack-take.need)+' 元會讓可支配變負的。':'');
   }
   function confirmTake(){
     if(takeSum()!==take.need){
